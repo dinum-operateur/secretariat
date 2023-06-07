@@ -1,3 +1,9 @@
-# from django.shortcuts import render
+from django.shortcuts import render
 
-# Create your views here.
+
+def view_index(request):
+    return render(request, "secretariat/accueil.html")
+
+
+def view_accessibilite(request):
+    return render(request, "secretariat/accessibilite.html")

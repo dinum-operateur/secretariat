@@ -1,8 +1,8 @@
-# from django.urls import path
+from django.urls import path
 
-# from . import views
+from secretariat import views
 
 urlpatterns = [
-    # path("", views.index_view, name="index"),
-    # path("accessibilite/", views.accessibility_view, name="accessibilite"),
+    path("", views.view_index, name="index"),
+    path("accessibilite/", views.view_accessibilite, name="accessibilite"),
 ]
