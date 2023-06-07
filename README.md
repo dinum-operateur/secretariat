@@ -22,17 +22,11 @@ python manage.py runserver
 
 ## Installation
 
-### Edit .env
+### Installer l'environnement
 
 Copier les variables d'environnement :
 ```
 cp .env.example .env
-```
-puis modifier en le contenu pour correspondre à votre configuration.
-
-### Installer l'environnement
-
-```
 python -m venv venv 
 
 . venv/bin/activate
@@ -43,7 +37,22 @@ pip install -r requirements.txt
 ### Configurer la base de données
 
 Installer PostgreSQL en fonction de votre OS : https://www.postgresql.org/download/
-puis créer une base de données au nom choisi dans DATABASE_URI de votre fichier .env.
+
+Puis lancez l'invite de commande PostgreSQL :
+
+```
+psql
+```
+
+Dans l'invite de commande psql, vous pouvez à présent créer la base de données et l'utilisateur :
+
+```sql
+CREATE USER secretariat_team PASSWORD 'secretariat_pwd';
+CREATE DATABASE secretariat_db OWNER secretariat_team;
+ALTER USER secretariat_team CREATEDB;
+```
+
+Vous pouvez à présent quitter l'invite de commande psql.
 
 ```bash
 python manage.py migrate
