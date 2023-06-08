@@ -1,22 +1,13 @@
-# Beta x Django
+# Secrétariat opérateur
 
 ## Introduction
 
-Ce repo est un kit de démarrage pour vos projets en Django. Il intègre :
+Ce produit contiendra des utilitaires pour les agents et presta de l'opérateur DINUM.
 
-- le [Design System de l'Etat](https://www.systeme-de-design.gouv.fr/) (DSFR) avec [django-dsfr](https://pypi.org/project/django-dsfr/)
-- des Content Security Policies avec django-csp
-- Pre-commit, pour formatter votre code à chaque commit
-- une ébauche de CI pour vos tests automatiques
-- les paramètres pour se connecter à une base de données PostgreSQL
-
-## Use
+## Démarrage rapide après installation
 
 ```bash
-# Activate your desired environment with
 . venv/bin/activate
-
-# and run server
 python manage.py runserver
 ```
 
@@ -24,11 +15,11 @@ python manage.py runserver
 
 ### Installer l'environnement
 
-Copier les variables d'environnement :
+Création d'un venv et installation des dépendances : 
+
 ```
 cp .env.example .env
 python -m venv venv 
-
 . venv/bin/activate
 pip install --upgrade pip
 pip install -r requirements.txt
@@ -53,6 +44,8 @@ ALTER USER secretariat_team CREATEDB;
 ```
 
 Vous pouvez à présent quitter l'invite de commande psql.
+
+Pour finir, lancez les migrations pour initialiser la base de données :
 
 ```bash
 python manage.py migrate
