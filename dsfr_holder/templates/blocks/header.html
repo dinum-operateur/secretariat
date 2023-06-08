@@ -1,33 +1,55 @@
-{% block service_title %}
-<a href="/" title="Accueil — {{ SITE_CONFIG.site_title }}">
-    <p class="fr-header__service-title">{{ SITE_CONFIG.site_title }}</p>
-</a>
-{% endblock service_title %}
-
-{% block service_tagline %}{{ SITE_CONFIG.site_tagline }}{% endblock service_tagline %}
-
-{% block header_tools %}
-<li>
-    <button class="fr-btn--display fr-btn" aria-controls="fr-theme-modal" data-fr-opened="false">Paramètres d'affichage</button>
-</li>
-{% endblock header_tools %}
-
-{# Leave burger_menu and main_menu blocks empty if the main menu is not used #}
-{# block burger_menu #}
-{# endblock burger_menu #}
-
-{% block main_menu %}
-    <div class="fr-header__menu fr-modal" id="fr-menu-mobile" aria-labelledby="fr-btn-menu-mobile">
-      <div class="fr-container">
-        <button type="button" class="fr-btn--close fr-btn" aria-controls="fr-menu-mobile">Fermer</button>
-        <div class="fr-header__menu-links"></div>
-        <nav role="navigation" class="fr-nav" id="fr-navigation" aria-label="Menu principal">
-          <ul class="fr-nav__list">
-            <li class="fr-nav__item">
-              <a class="fr-nav__link" href="{% url 'index' %}" target="_self">Accueil</a>
-            </li>
-          </ul>
-        </nav>
-      </div>
+<header role="banner" class="fr-header">
+    <div class="fr-header__body">
+        <div class="fr-container">
+            <div class="fr-header__body-row">
+                <div class="fr-header__brand fr-enlarge-link">
+                    <div class="fr-header__brand-top">
+                        <div class="fr-header__logo">
+                            <p class="fr-logo">
+                                DINUM
+                            </p>
+                        </div>
+                        <div class="fr-header__navbar">
+                            <button class="fr-btn--menu fr-btn" data-fr-opened="false" aria-controls="modal-499" aria-haspopup="menu" id="button-500" title="Menu">
+                                Menu
+                            </button>
+                        </div>
+                    </div>
+                    <div class="fr-header__service">
+                        <a href="/" title="Accueil - Secrétariat - Opérateur de la DINUM">
+                            <p class="fr-header__service-title">
+                                Secrétariat de l’opérateur de services numériques
+                            </p>
+                        </a>
+                        <p class="fr-header__service-tagline">Agent de l'opérateur, retrouvez ici les services pour vous</p>
+                    </div>
+                </div>
+                <div class="fr-header__tools">
+                    <div class="fr-header__tools-links">
+                        <ul class="fr-btns-group">
+                            <li>
+                                <a class="fr-btn todofr-icon-lock-line" href="[url - à modifier]">
+                                    Se connecter
+                                </a>
+                            </li>
+                            <li>
+                                <a class="fr-btn todofr-icon-account-line" href="[url - à modifier]">
+                                    S’enregistrer
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
-{% endblock main_menu %}
+    <div class="fr-header__menu fr-modal" id="modal-499" aria-labelledby="button-500">
+        <div class="fr-container">
+            <button class="fr-btn--close fr-btn" aria-controls="modal-499" title="Fermer">
+                Fermer
+            </button>
+            <div class="fr-header__menu-links">
+            </div>
+        </div>
+    </div>
+</header>
