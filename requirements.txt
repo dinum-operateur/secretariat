@@ -7,3 +7,4 @@ isort==5.12.0
 psycopg2-binary==2.9.6
 django-referrer-policy==1.0
 django-csp==3.7
+gunicorn==20.1.0
