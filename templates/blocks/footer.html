@@ -1,42 +1,44 @@
-{% load static %}
-
 <footer role="contentinfo" class="fr-footer" id="footer">
   <div class="fr-container">
     <div class="fr-footer__body">
       <div class="fr-footer__brand fr-enlarge-link">
         <a href="/" title="Retour à l’accueil">
-          <p class="fr-logo" title="république française"></p>
+          {% block brand %}
+            <p class="fr-logo" title="{{ SITE_CONFIG.footer_brand|default:'république française' }}">
+              {{ SITE_CONFIG.footer_brand_html| default_if_none:'république<br />française' | safe }}
+            </p>
+          {% endblock brand %}
         </a>
       </div>
       <div class="fr-footer__content">
-        <p class="fr-footer__content-desc"></p>
+        <p class="fr-footer__content-desc">{% block footer_content %}{{ SITE_CONFIG.footer_description | safe }}{% endblock footer_content %}</p>
         <ul class="fr-footer__content-list">
           <li class="fr-footer__content-item">
-            <a class="fr-footer__content-link" target="_blank" href="https://legifrance.gouv.fr">legifrance.gouv.fr</a>
+            <a class="fr-footer__content-link" href="https://legifrance.gouv.fr" rel="noopener noreferrer">legifrance.gouv.fr</a>
           </li>
           <li class="fr-footer__content-item">
-            <a class="fr-footer__content-link" target="_blank" href="https://gouvernement.fr">gouvernement.fr</a>
+            <a class="fr-footer__content-link" href="https://gouvernement.fr" rel="noopener noreferrer">gouvernement.fr</a>
           </li>
           <li class="fr-footer__content-item">
-            <a class="fr-footer__content-link" target="_blank" href="https://service-public.fr">service-public.fr</a>
+            <a class="fr-footer__content-link" href="https://service-public.fr" rel="noopener noreferrer">service-public.fr</a>
           </li>
           <li class="fr-footer__content-item">
-            <a class="fr-footer__content-link" target="_blank" href="https://data.gouv.fr">data.gouv.fr</a>
+            <a class="fr-footer__content-link" href="https://data.gouv.fr" rel="noopener noreferrer">data.gouv.fr</a>
           </li>
           <li class="fr-footer__content-item">
-              <a class="fr-footer__content-link" target="_blank" href="https://beta.gouv.fr">beta.gouv.fr</a>
+            <a class="fr-footer__content-link" href="https://beta.gouv.fr" rel="noopener noreferrer">beta.gouv.fr</a>
           </li>
         </ul>
       </div>
     </div>
     <div class="fr-footer__bottom">
       <ul class="fr-footer__bottom-list">
-        
+        {% block footer_links %}
           <li class="fr-footer__bottom-item">
             <a class="fr-footer__bottom-link" href="#">Plan du site</a>
           </li>
           <li class="fr-footer__bottom-item">
-            <a class="fr-footer__bottom-link" href="{% url 'accessibilite' %}">Accessibilité: non conforme</a>
+            <a class="fr-footer__bottom-link" href="#">Accessibilité: {{ SITE_CONFIG.get_accessibility_status_display|default:'non' }} conforme</a>
           </li>
           <li class="fr-footer__bottom-item">
             <a class="fr-footer__bottom-link" href="#">Mentions légales</a>
@@ -47,15 +49,11 @@
           <li class="fr-footer__bottom-item">
             <a class="fr-footer__bottom-link" href="#">Gestion des cookies</a>
           </li>
-        
-  <li class="fr-footer__bottom-item">
-    <button class="fr-btn--display fr-btn" aria-controls="fr-theme-modal" data-fr-opened="false" data-fr-js-modal-button="true">Paramètres d'affichage</button>
-  </li>
-
+        {% endblock footer_links %}
       </ul>
       <div class="fr-footer__bottom-copy">
         <p>
-          Sauf mention contraire, tous les textes de ce site sont sous
+          Sauf mention explicite de propriété intellectuelle détenue par des tiers, les contenus de ce site sont proposés sous
           <a href="https://github.com/etalab/licence-ouverte/blob/master/LO.md" target="_blank" rel="noopener noreferrer" title="Licence etalab-2.0 - Ouvrir dans une nouvelle fenêtre">
             licence etalab-2.0
           </a>
