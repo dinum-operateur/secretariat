@@ -1,7 +1,7 @@
 import requests
 from django.test import TestCase
 
-from config.settings import OUTLINE_API_TOKEN, OUTLINE_API_URL
+from config.settings import OUTLINE_API_TOKEN, OUTLINE_API_URL, OUTLINE_OPI_GROUP_ID
 from secretariat.models import User
 
 
@@ -34,7 +34,7 @@ class TestUser(TestCase):
         )
         return response
 
-    def test_creating_user_here_adds_them_to_outline(self):
+    def test_creating_user_adds_them_to_outline(self):
         user = self.test_user
 
         response = self.list_outline_users(query=f"{user.first_name} {user.last_name}")
@@ -47,8 +47,40 @@ class TestUser(TestCase):
         self.assertEqual(response.json()["pagination"]["total"], 1)
         self.assertEqual(response.json()["data"][0]["email"], user.email)
 
-    # def test_creating_user_saves_outline_uuid(self):
-    #     pass
+    def test_creating_user_adds_them_to_opi_group_in_outline(self):
+        user = self.test_user
+
+        response = requests.post(
+            url=f"{OUTLINE_API_URL}/groups.memberships",
+            headers=self.headers,
+            json={
+                "id": OUTLINE_OPI_GROUP_ID,
+                "offset": 0,
+                "limit": 25,
+                "query": f"{user.first_name} {user.last_name}",
+            },
+        )
+        self.assertFalse(
+            f"{user.first_name} {user.last_name}" in response.json()["data"]["users"]
+        )
+
+        user.save()
+        self.assertTrue(user in User.objects.all())
+
+        response = requests.post(
+            url=f"{OUTLINE_API_URL}/groups.memberships",
+            headers=self.headers,
+            json={
+                "id": OUTLINE_OPI_GROUP_ID,
+                "offset": 0,
+                "limit": 25,
+                "query": f"{user.first_name} {user.last_name}",
+            },
+        )
+        self.assertTrue(
+            f"{user.first_name} {user.last_name}"
+            in response.json()["data"]["users"][-1]["name"]
+        )
 
     def tearDown(self):
         # tearDown method to remove invited test_user from Outline staging

@@ -2,7 +2,7 @@ import requests
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 
-from config.settings import OUTLINE_API_TOKEN, OUTLINE_API_URL
+from config.settings import OUTLINE_API_TOKEN, OUTLINE_API_URL, OUTLINE_OPI_GROUP_ID
 
 
 class User(AbstractUser):
@@ -35,4 +35,16 @@ class User(AbstractUser):
         self.outline_uuid = response.json()["data"]["users"][0]["id"]
 
     def add_to_outline_groups(self, user_uuid, group):
-        pass
+        headers = {
+            "Content-Type": "application/json",
+            "Accept": "application/json",
+            "Authorization": f"Bearer {OUTLINE_API_TOKEN}",
+        }
+        requests.post(
+            url=f"{OUTLINE_API_URL}/groups.add_user",
+            headers=headers,
+            json={
+                "id": OUTLINE_OPI_GROUP_ID,
+                "userId": user_uuid,
+            },
+        )
