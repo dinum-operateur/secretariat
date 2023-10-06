@@ -35,5 +35,8 @@ jobs:
           flake8
           isort . --check
       - name: Run the unit tests
+        env:
+          OUTLINE_API_URL: ${{ secrets.OUTLINE_API_URL }}
+          OUTLINE_API_TOKEN: ${{ secrets.OUTLINE_API_TOKEN }}
         run: |
           python manage.py test
