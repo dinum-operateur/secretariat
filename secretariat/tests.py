@@ -11,6 +11,13 @@ class TestUser(TestCase):
         "Accept": "application/json",
         "Authorization": f"Bearer {OUTLINE_API_TOKEN}",
     }
+    test_user = User(
+        first_name="prudence",
+        last_name="crandall",
+        username="pcrandall",
+        email="prudence.crandall@gouv.fr",
+        password="whatever",
+    )
 
     def list_outline_users(self, query):
         response = requests.post(
@@ -28,13 +35,7 @@ class TestUser(TestCase):
         return response
 
     def test_creating_user_here_adds_them_to_outline(self):
-        user = User(
-            first_name="prudence",
-            last_name="crandall",
-            username="pcrandall",
-            email="prudence.crandall@gouv.fr",
-            password="whatever",
-        )
+        user = self.test_user
 
         response = self.list_outline_users(query=f"{user.first_name} {user.last_name}")
         self.assertEqual(response.json()["pagination"]["total"], 0)
@@ -45,3 +46,19 @@ class TestUser(TestCase):
         response = self.list_outline_users(query=f"{user.first_name} {user.last_name}")
         self.assertEqual(response.json()["pagination"]["total"], 1)
         self.assertEqual(response.json()["data"][0]["email"], user.email)
+
+    # def test_creating_user_saves_outline_uuid(self):
+    #     pass
+
+    def tearDown(self):
+        # tearDown method to remove invited test_user from Outline staging
+        # will become obsolete when mocking outline client
+        test_user = User.objects.get(username=self.test_user.username)
+
+        requests.post(
+            url=f"{OUTLINE_API_URL}/users.delete",
+            headers=self.headers,
+            json={
+                "id": test_user.outline_uuid,
+            },
+        )
