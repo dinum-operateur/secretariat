@@ -3,9 +3,14 @@ import requests
 from config.settings import OUTLINE_API_TOKEN, OUTLINE_API_URL
 from secretariat.models import User
 
-# from django.auth.contrib import get_user_model
 
-# User = get_user_model()
+class OutlineAPIClientError(Exception):
+    pass
+
+
+class RemoteServerError(OutlineAPIClientError):
+    def __init__(self, error_code):
+        self.status_code = error_code
 
 
 class Client:
@@ -42,3 +47,21 @@ class Client:
                 "userId": user_uuid,
             },
         )
+
+    def list_users(self, query):
+        response = requests.post(
+            url=f"{self.url}/users.list",
+            headers=self.headers,
+            json={
+                "offset": 0,
+                "limit": 25,
+                "sort": "updatedAt",
+                "direction": "DESC",
+                "query": query,
+                "filter": "all",
+            },
+        )
+        if response.status_code != 200:
+            raise RemoteServerError(response.status_code)
+
+        return response.json()["data"]
