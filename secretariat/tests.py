@@ -49,20 +49,20 @@ class TestUser(TestCase):
 
     def test_creating_user_adds_them_to_opi_group_in_outline(self):
         user = self.test_user
+        query = f"{user.first_name} {user.last_name}"
 
         response = requests.post(
             url=f"{OUTLINE_API_URL}/groups.memberships",
             headers=self.headers,
-            json={
-                "id": OUTLINE_OPI_GROUP_ID,
-                "offset": 0,
-                "limit": 25,
-                "query": f"{user.first_name} {user.last_name}",
-            },
+            json={"id": OUTLINE_OPI_GROUP_ID, "offset": 0, "limit": 25, "query": query},
         )
         self.assertFalse(
-            f"{user.first_name} {user.last_name}" in response.json()["data"]["users"]
+            any(
+                outline_user["name"] == query
+                for outline_user in response.json()["data"]["users"]
+            )
         )
+        members_in_group = len(response.json()["data"]["users"])
 
         user.save()
         self.assertTrue(user in User.objects.all())
@@ -74,13 +74,18 @@ class TestUser(TestCase):
                 "id": OUTLINE_OPI_GROUP_ID,
                 "offset": 0,
                 "limit": 25,
-                "query": f"{user.first_name} {user.last_name}",
+                "query": query,
             },
         )
+        self.assertEqual(response.json()["data"]["users"], members_in_group + 1)
         self.assertTrue(
-            f"{user.first_name} {user.last_name}"
-            in response.json()["data"]["users"][-1]["name"]
+            any(
+                outline_user["name"] == query
+                for outline_user in response.json()["data"]["users"]
+            )
         )
+
+    # def on réinvite quelqu'uun déjà invité. Est-ce qu'on recup bien l'uuid
 
     def tearDown(self):
         # tearDown method to remove invited test_user from Outline staging

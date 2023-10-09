@@ -1,8 +1,7 @@
-import requests
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 
-from config.settings import OUTLINE_API_TOKEN, OUTLINE_API_URL, OUTLINE_OPI_GROUP_ID
+from config.settings import OUTLINE_OPI_GROUP_ID
 
 
 class User(AbstractUser):
@@ -10,41 +9,11 @@ class User(AbstractUser):
 
     def save(self, *args, **kwargs):
         super(User, self).save(*args, **kwargs)
-        self.invite_to_outline()
-        self.add_to_outline_groups(user_uuid=self.outline_uuid, group="OPI")
+        from secretariat.utils.outline import Client as OutlineClient
 
-    def invite_to_outline(self):
-        headers = {
-            "Content-Type": "application/json",
-            "Accept": "application/json",
-            "Authorization": f"Bearer {OUTLINE_API_TOKEN}",
-        }
-        response = requests.post(
-            url=f"{OUTLINE_API_URL}/users.invite",
-            headers=headers,
-            json={
-                "invites": [
-                    {
-                        "name": f"{self.first_name} {self.last_name}",
-                        "email": self.email,
-                        "role": "member",
-                    }
-                ]
-            },
-        )
-        self.outline_uuid = response.json()["data"]["users"][0]["id"]
+        client = OutlineClient()
 
-    def add_to_outline_groups(self, user_uuid, group):
-        headers = {
-            "Content-Type": "application/json",
-            "Accept": "application/json",
-            "Authorization": f"Bearer {OUTLINE_API_TOKEN}",
-        }
-        requests.post(
-            url=f"{OUTLINE_API_URL}/groups.add_user",
-            headers=headers,
-            json={
-                "id": OUTLINE_OPI_GROUP_ID,
-                "userId": user_uuid,
-            },
+        self.outline_uuid = client.invite_to_outline(self)
+        client.add_to_outline_group(
+            user_uuid=self.outline_uuid, group=OUTLINE_OPI_GROUP_ID
         )
