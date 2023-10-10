@@ -17,13 +17,13 @@ def list_response_ok():
   "data": [
     {
       "id": "497f6eca-6276-4993-bfeb-53cbbbba6f08",
-      "name": "Jane Doe",
-      "avatarUrl": "http://example.com",
-      "email": "user@example.com",
+      "name": "Prudence Crandall",
+      "avatarUrl": "https://upload.wikimedia.org/wikipedia/commons/0/0d/Appletons%27_Crandall_Prudence.jpg",
+      "email": "prudence.crandall@fictif.gouv.fr",
       "isAdmin": true,
-      "isSuspended": true,
-      "lastActiveAt": "2019-08-24T14:15:22Z",
-      "createdAt": "2019-08-24T14:15:22Z"
+      "isSuspended": false,
+      "lastActiveAt": "1890-01-28T17:18:22Z",
+      "createdAt": "1803-09-03T14:15:22Z"
     }
   ],
   "pagination": {

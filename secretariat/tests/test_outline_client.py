@@ -18,10 +18,14 @@ class TestOutlineClient(TestCase):
 
         response = client.list_users("")
         # vérifier que post a été appelé requests.post
-        self.assertTrue(mock_post.called, "Aucune requête POST n'a été faite")
-        self.assertEqual(len(response), 1, "On n'a pas de user dans la réponse")
+        self.assertTrue(mock_post.called, "The client should send a POST request")
+        self.assertEqual(len(response), 1, "Response should contain a list of 1 user")
         first_user = response[0]
-        self.assertEqual(first_user["name"], "Jane Doe")
+        self.assertEqual(
+            first_user["name"],
+            "Prudence Crandall",
+            "First user should be Prudence Crandall",
+        )
 
     @mock.patch("requests.post")
     def test_list_users_when_unauthorized(self, mock_post):
@@ -34,7 +38,4 @@ class TestOutlineClient(TestCase):
         exception = cm.exception
         self.assertEqual(exception.status_code, 401)
 
-        self.assertTrue(mock_post.called, "Aucune requête POST n'a été faite")
-
-    def test_list_users_when_server_not_found(self):
-        pass
+        self.assertTrue(mock_post.called, "The client should send a POST request")
