@@ -17,7 +17,6 @@ class TestOutlineClient(TestCase):
         mock_post.return_value = mocks.list_response_ok()
 
         response = client.list_users("")
-        # vérifier que post a été appelé requests.post
         self.assertTrue(mock_post.called, "The client should send a POST request")
         self.assertEqual(len(response), 1, "Response should contain a list of 1 user")
         first_user = response[0]
