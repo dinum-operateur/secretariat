@@ -3,6 +3,9 @@ from django.test import TestCase
 
 from config.settings import OUTLINE_API_TOKEN, OUTLINE_API_URL, OUTLINE_OPI_GROUP_ID
 from secretariat.models import User
+from secretariat.tests.factories import UserFactory
+
+DEFAULT_OUTLINE_UUID = "not a valid uuid"
 
 
 class TestUser(TestCase):
@@ -35,39 +38,59 @@ class TestUser(TestCase):
         return response
 
     def test_creating_user_adds_them_to_outline(self):
-        user = self.test_user
-
-        response = self.list_outline_users(query=f"{user.first_name} {user.last_name}")
-        self.assertEqual(response.json()["pagination"]["total"], 0)
+        user = UserFactory()
+        query = f"{user.first_name} {user.last_name}"
+        response = self.list_outline_users(query=query)
+        self.assertEqual(
+            response.json()["pagination"]["total"],
+            0,
+            f"Found an existing outline user with query {query}",
+        )
 
         user.save()
         self.assertTrue(user in User.objects.all())
 
         response = self.list_outline_users(query=f"{user.first_name} {user.last_name}")
-        self.assertEqual(response.json()["pagination"]["total"], 1)
-        self.assertEqual(response.json()["data"][0]["email"], user.email)
+        self.assertNotEqual(
+            user.outline_uuid,
+            DEFAULT_OUTLINE_UUID,
+            "Outline UUID should be correctly filled on user after save",
+        )
+        self.assertEqual(
+            response.json()["pagination"]["total"],
+            1,
+            "User should be invited on outline after save",
+        )
+        self.assertEqual(
+            response.json()["data"][0]["email"],
+            user.email,
+            "User should have same email in django and outline",
+        )
+
+        self.removeUserFromOutline(user)
 
     def test_creating_user_adds_them_to_opi_group_in_outline(self):
-        user = self.test_user
+        user = UserFactory()
         query = f"{user.first_name} {user.last_name}"
-
-        response = requests.post(
+        memberships_before_save = requests.post(
             url=f"{OUTLINE_API_URL}/groups.memberships",
             headers=self.headers,
             json={"id": OUTLINE_OPI_GROUP_ID, "offset": 0, "limit": 25, "query": query},
         )
+
         self.assertFalse(
             any(
                 outline_user["name"] == query
-                for outline_user in response.json()["data"]["users"]
-            )
+                for outline_user in memberships_before_save.json()["data"]["users"]
+            ),
+            "New user should not be in any outline group before first save",
         )
-        members_in_group = len(response.json()["data"]["users"])
+        member_count_before_save = len(memberships_before_save.json()["data"]["users"])
 
         user.save()
         self.assertTrue(user in User.objects.all())
 
-        response = requests.post(
+        memberships_after_save = requests.post(
             url=f"{OUTLINE_API_URL}/groups.memberships",
             headers=self.headers,
             json={
@@ -77,25 +100,30 @@ class TestUser(TestCase):
                 "query": query,
             },
         )
-        self.assertEqual(response.json()["data"]["users"], members_in_group + 1)
+        self.assertEqual(
+            len(memberships_after_save.json()["data"]["users"]),
+            member_count_before_save + 1,
+            "OPI group should contain one more member after user save.",
+        )
         self.assertTrue(
             any(
                 outline_user["name"] == query
-                for outline_user in response.json()["data"]["users"]
-            )
+                for outline_user in memberships_after_save.json()["data"]["users"]
+            ),
+            "New user should be in the outline group after save",
         )
+        self.assertNotEqual(
+            user.outline_uuid,
+            DEFAULT_OUTLINE_UUID,
+            "Outline UUID should be filled in django user after save",
+        )
+        self.removeUserFromOutline(user)
 
-    # def on réinvite quelqu'uun déjà invité. Est-ce qu'on recup bien l'uuid
-
-    def tearDown(self):
-        # tearDown method to remove invited test_user from Outline staging
-        # will become obsolete when mocking outline client
-        test_user = User.objects.get(username=self.test_user.username)
-
+    def removeUserFromOutline(self, user: User):
         requests.post(
             url=f"{OUTLINE_API_URL}/users.delete",
             headers=self.headers,
             json={
-                "id": test_user.outline_uuid,
+                "id": user.outline_uuid,
             },
         )
