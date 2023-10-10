@@ -1,3 +1,5 @@
+from unittest import skipUnless
+
 import requests
 from django.test import TestCase
 
@@ -8,6 +10,10 @@ from secretariat.tests.factories import UserFactory
 DEFAULT_OUTLINE_UUID = "not a valid uuid"
 
 
+@skipUnless(
+    OUTLINE_API_TOKEN and OUTLINE_API_URL and OUTLINE_OPI_GROUP_ID,
+    "Skip test in case of missing outline configuration",
+)
 class TestUser(TestCase):
     headers = {
         "Content-Type": "application/json",
