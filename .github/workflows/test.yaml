@@ -33,7 +33,7 @@ jobs:
         run: |
           black --check .
           flake8
-          isort . --check
+          isort . --check --profile black --filter-files
       - name: Run the unit tests
         env:
           OUTLINE_API_URL: ${{ secrets.OUTLINE_API_URL }}
