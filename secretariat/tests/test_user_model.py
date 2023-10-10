@@ -50,7 +50,7 @@ class TestUser(TestCase):
         self.assertEqual(
             response.json()["pagination"]["total"],
             0,
-            f"Found an existing outline user with query {query}",
+            f"No user should exist in outline with query '{query}', before first save",
         )
 
         user.save()
