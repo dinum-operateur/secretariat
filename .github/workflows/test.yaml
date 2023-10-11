@@ -7,14 +7,14 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ["3.9"]
+        python-version: ["3.11"]
     services:
       postgres:
         image: postgres:14-alpine
         env:
-          POSTGRES_USER: db_user
-          POSTGRES_PASSWORD: db_password
-          POSTGRES_DB: db_name
+          POSTGRES_USER: secretariat_team
+          POSTGRES_PASSWORD: secretariat_pwd
+          POSTGRES_DB: secretariat_db
         ports:
           - 5432:5432
     steps:
@@ -33,7 +33,10 @@ jobs:
         run: |
           black --check .
           flake8
-          isort . --check
+          isort . --check --profile black --filter-files
       - name: Run the unit tests
+        env:
+          OUTLINE_API_URL: ${{ secrets.OUTLINE_API_URL }}
+          OUTLINE_API_TOKEN: ${{ secrets.OUTLINE_API_TOKEN }}
         run: |
           python manage.py test
