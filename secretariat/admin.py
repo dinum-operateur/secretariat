@@ -13,3 +13,4 @@ class UserAdmin(admin.ModelAdmin):
         "is_active",
         "is_staff",
     )
+    readonly_fields = ["outline_uuid"]
