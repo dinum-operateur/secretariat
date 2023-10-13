@@ -13,6 +13,11 @@ class RemoteServerError(OutlineAPIClientError):
         self.status_code = error_code
 
 
+class InvitationFailed(OutlineAPIClientError):
+    def __init__(self, error_code):
+        self.status_code = error_code
+
+
 class Client:
     url = OUTLINE_API_URL
     headers = {
@@ -35,6 +40,9 @@ class Client:
                 ]
             },
         )
+        if len(response.json()["data"]["users"]) == 0:
+            raise InvitationFailed(response.status_code)
+
         user_uuid = response.json()["data"]["users"][0]["id"]
         return user_uuid
 
