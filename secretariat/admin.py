@@ -19,7 +19,7 @@ class UserAdmin(admin.ModelAdmin):
     def save_model(self, request, obj, form, change):
         super().save_model(request, obj, form, change)
 
-        if obj.outline_uuid is None:
+        if "email" in form.changed_data:
             from secretariat.utils.outline import Client as OutlineClient
             from secretariat.utils.outline import InvitationFailed
 
