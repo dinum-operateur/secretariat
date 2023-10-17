@@ -32,5 +32,5 @@ class UserAdmin(admin.ModelAdmin):
                     user_uuid=obj.outline_uuid, group=OUTLINE_OPI_GROUP_ID
                 )
             except InvitationFailed:
-                error_message = f"L'invitation a Outline a échoué. Vérifiez que l'email \"{obj.email}\" n'est pas déjà invitée sur Outline."
+                error_message = f"L’invitation à Outline a échoué. Vérifiez que l'adresse email « {obj.email} » n'est pas déjà invitée sur Outline."
                 messages.warning(request, error_message)
