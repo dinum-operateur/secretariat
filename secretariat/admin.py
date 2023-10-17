@@ -31,7 +31,7 @@ class UserAdmin(admin.ModelAdmin):
                 client.add_to_outline_group(
                     user_uuid=obj.outline_uuid, group=OUTLINE_OPI_GROUP_ID
                 )
-                success_message = f"Mail « {obj.email} » invitée sur Outline et ajoutée au groupe Opérateur."
+                success_message = f"L'adresse email « {obj.email} » invitée sur Outline et ajoutée au groupe Opérateur."
                 messages.success(request, success_message)
             except InvitationFailed:
                 error_message = f"L’invitation à Outline a échoué. Vérifiez que l'adresse email « {obj.email} » n'est pas déjà invitée sur Outline."
