@@ -41,8 +41,12 @@ class UserAdmin(admin.ModelAdmin):
     def is_outline_synchronized(self, obj):
         return obj.outline_uuid is not None
 
-    def save_model(self, request, obj, form, change):
+    def save_model(self, request, obj: User, form, change):
         super().save_model(request, obj, form, change)
+
+        if "password" in form.changed_data:
+            obj.set_password(form.data["password"])
+            obj.save()
 
         if obj.outline_uuid is None and "email" in form.changed_data:
             from secretariat.utils.outline import Client as OutlineClient
