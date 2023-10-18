@@ -13,8 +13,13 @@ class UserAdmin(admin.ModelAdmin):
         "last_name",
         "is_active",
         "is_staff",
+        "is_outline_synchronized",
     )
     readonly_fields = ["outline_uuid"]
+
+    @admin.display(description="Synchro Outline", boolean=True)
+    def is_outline_synchronized(self, obj):
+        return obj.outline_uuid is not None
 
     def save_model(self, request, obj, form, change):
         super().save_model(request, obj, form, change)
