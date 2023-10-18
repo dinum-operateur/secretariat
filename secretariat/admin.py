@@ -16,6 +16,26 @@ class UserAdmin(admin.ModelAdmin):
         "is_outline_synchronized",
     )
     readonly_fields = ["outline_uuid"]
+    fieldsets = (
+        (
+            "Utilisateur/rice",
+            {
+                "fields": ("username", "password", "email", "first_name", "last_name"),
+            },
+        ),
+        (
+            "Synchronisation",
+            {
+                "fields": ("outline_uuid", "date_joined"),
+            },
+        ),
+        (
+            "Django",
+            {
+                "fields": ("is_active", "is_staff", "is_superuser"),
+            },
+        ),
+    )
 
     @admin.display(description="Synchro Outline", boolean=True)
     def is_outline_synchronized(self, obj):
