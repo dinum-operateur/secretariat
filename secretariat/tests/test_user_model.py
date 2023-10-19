@@ -125,6 +125,9 @@ class TestUser(TestCase):
         )
         self.removeUserFromOutline(user)
 
+    def test_adding_user_already_invited_to_outline_retrieves_their_uuid(self):
+        pass
+
     def removeUserFromOutline(self, user: User):
         requests.post(
             url=f"{OUTLINE_API_URL}/users.delete",

@@ -18,6 +18,11 @@ class InvitationFailed(OutlineAPIClientError):
         self.status_code = error_code
 
 
+class EmailInvitedMoreThanOnce(OutlineAPIClientError):
+    def __init__(self, error_code):
+        self.status_code = error_code
+
+
 class Client:
     url = OUTLINE_API_URL
     headers = {
@@ -55,6 +60,24 @@ class Client:
                 "userId": user_uuid,
             },
         )
+
+    def retrieve_user_by_email(self, email):
+        response = requests.post(
+            url=f"{self.url}/users.list",
+            headers=self.headers,
+            json={
+                "offset": 0,
+                "limit": 25,
+                "sort": "updatedAt",
+                "direction": "DESC",
+                "emails[]": email,
+                "filter": "all",
+            },
+        )
+        if len(response.json()["data"]) != 1:
+            raise EmailInvitedMoreThanOnce(response.status_code)
+
+        return response.json()["data"]
 
     def list_users(self, query):
         response = requests.post(
