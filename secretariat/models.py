@@ -8,6 +8,10 @@ class User(AbstractUser):
     def __str__(self):
         return f"{self.first_name} {self.last_name}"
 
+    @property
+    def organisations(self):
+        return Organisation.objects.filter(membership__user=self)
+
 
 class Organisation(models.Model):
     name = models.CharField(max_length=50)
@@ -15,6 +19,10 @@ class Organisation(models.Model):
 
     def __str__(self):
         return self.name
+
+    @property
+    def members(self):
+        return User.objects.filter(membership__organisation=self)
 
 
 class Membership(models.Model):
