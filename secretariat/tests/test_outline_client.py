@@ -3,7 +3,7 @@ from unittest import mock
 from django.test import TestCase
 
 import secretariat.tests.outline_mocks as mocks
-from secretariat.utils.outline import Client, RemoteServerError
+from secretariat.utils.outline import Client, GroupCreationFailed, RemoteServerError
 
 
 class TestOutlineClient(TestCase):
@@ -37,4 +37,25 @@ class TestOutlineClient(TestCase):
         exception = cm.exception
         self.assertEqual(exception.status_code, 401)
 
+        self.assertTrue(mock_post.called, "The client should send a POST request")
+
+    @mock.patch("requests.post")
+    def test_create_group_when_all_is_fine(self, mock_post):
+        client = Client()
+        mock_post.return_value = mocks.group_creation_ok()
+        uuid = client.create_new_group("Oh le joli groupe")
+        self.assertEqual(
+            uuid,
+            "29907d66-d23f-46e9-be9b-92e2820b81aa",
+            "Group should be created on outline and uuid returned",
+        )
+
+    @mock.patch("requests.post")
+    def test_create_group_but_it_exists(self, mock_post):
+        client = Client()
+        mock_post.return_value = mocks.group_creation_ko_already_exists()
+        with self.assertRaises(GroupCreationFailed) as cm:
+            client.create_new_group("Oh le joli groupe ENCORE")
+        exception = cm.exception
+        self.assertEqual(exception.status_code, 400)
         self.assertTrue(mock_post.called, "The client should send a POST request")
