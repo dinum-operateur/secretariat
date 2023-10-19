@@ -1,7 +1,7 @@
 from django.contrib import admin, messages
 
 from config.settings import OUTLINE_OPI_GROUP_ID
-from secretariat.models import User
+from secretariat.models import Organisation, User
 
 
 @admin.register(User)
@@ -65,3 +65,8 @@ class UserAdmin(admin.ModelAdmin):
             except InvitationFailed:
                 error_message = f"L’invitation à Outline a échoué. Vérifiez que l'adresse email « {obj.email} » n'est pas déjà invitée sur Outline."
                 messages.warning(request, error_message)
+
+
+@admin.register(Organisation)
+class OrganisationAdmin(admin.ModelAdmin):
+    pass
