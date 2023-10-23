@@ -1,7 +1,17 @@
 from django.contrib import admin, messages
 
 from config.settings import OUTLINE_OPI_GROUP_ID
-from secretariat.models import User
+from secretariat.models import Membership, Organisation, User
+
+
+class MembershipInline(admin.TabularInline):
+    model = Membership
+    extra = 1
+    verbose_name_plural = "Organisations"
+
+
+class MembershipInlineForOrganisation(MembershipInline):
+    verbose_name_plural = "Membres"
 
 
 @admin.register(User)
@@ -15,6 +25,7 @@ class UserAdmin(admin.ModelAdmin):
         "is_staff",
         "is_outline_synchronized",
     )
+    inlines = [MembershipInline]
     readonly_fields = ["outline_uuid"]
     fieldsets = (
         (
@@ -65,3 +76,8 @@ class UserAdmin(admin.ModelAdmin):
             except InvitationFailed:
                 error_message = f"L’invitation à Outline a échoué. Vérifiez que l'adresse email « {obj.email} » n'est pas déjà invitée sur Outline."
                 messages.warning(request, error_message)
+
+
+@admin.register(Organisation)
+class OrganisationAdmin(admin.ModelAdmin):
+    inlines = [MembershipInlineForOrganisation]
