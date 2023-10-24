@@ -44,18 +44,21 @@ class Client:
                 ]
             },
         )
+        if response.status_code != 200:
+            raise RemoteServerError
+
         if len(response.json()["data"]["users"]) == 0:
             raise InvitationFailed(response.status_code)
 
         user_uuid = response.json()["data"]["users"][0]["id"]
         return user_uuid
 
-    def add_to_outline_group(self, user_uuid, group):
+    def add_to_outline_group(self, user_uuid, group_uuid):
         requests.post(
             url=f"{self.url}/groups.add_user",
             headers=self.headers,
             json={
-                "id": group,
+                "id": group_uuid,
                 "userId": user_uuid,
             },
         )
@@ -78,6 +81,21 @@ class Client:
 
         return response.json()["data"]
 
+    def find_user_from_email(self, email):
+        response = requests.post(
+            url=f"{self.url}/users.list",
+            headers=self.headers,
+            json={
+                "offset": 0,
+                "limit": 1,
+                "emails": [email],
+            },
+        )
+        if response.status_code != 200:
+            raise RemoteServerError(response.status_code)
+
+        return response.json()["data"][0]
+
     def create_new_group(self, group_name):
         response = requests.post(
             url=f"{self.url}/groups.create",
@@ -96,3 +114,12 @@ class Client:
         object = response.json()
         group_uuid = object["data"]["id"]
         return group_uuid
+
+    def remove_user_from_outline(self, user: User):
+        requests.post(
+            url=f"{OUTLINE_API_URL}/users.delete",
+            headers=self.headers,
+            json={
+                "id": user.outline_uuid,
+            },
+        )

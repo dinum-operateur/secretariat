@@ -1,6 +1,5 @@
 from django.contrib import admin, messages
 
-from config.settings import OUTLINE_OPI_GROUP_ID
 from secretariat.models import Membership, Organisation, User
 
 
@@ -60,20 +59,11 @@ class UserAdmin(admin.ModelAdmin):
             obj.save()
 
         if obj.outline_uuid is None and "email" in form.changed_data:
-            from secretariat.utils.outline import Client as OutlineClient
-            from secretariat.utils.outline import InvitationFailed
-
-            client = OutlineClient()
-
             try:
-                obj.outline_uuid = client.invite_to_outline(obj)
-                obj.save()
-                client.add_to_outline_group(
-                    user_uuid=obj.outline_uuid, group=OUTLINE_OPI_GROUP_ID
-                )
-                success_message = f"L'adresse email « {obj.email} » invitée sur Outline et ajoutée au groupe Opérateur."
+                obj.synchronize_outline()
+                success_message = f"L'adresse email « {obj.email} » a été invitée sur Outline et ajoutée au(x) groupe(s) adéquat(s)."
                 messages.success(request, success_message)
-            except InvitationFailed:
+            except Exception:
                 error_message = f"L’invitation à Outline a échoué. Vérifiez que l'adresse email « {obj.email} » n'est pas déjà invitée sur Outline."
                 messages.warning(request, error_message)
 
