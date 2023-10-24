@@ -45,7 +45,7 @@ class Client:
             },
         )
         if response.status_code != 200:
-            raise RemoteServerError
+            raise RemoteServerError(response.status_code)
 
         if len(response.json()["data"]["users"]) == 0:
             raise InvitationFailed(response.status_code)
