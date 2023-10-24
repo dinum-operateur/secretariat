@@ -60,7 +60,7 @@ class UserAdmin(admin.ModelAdmin):
 
         if obj.outline_uuid is None and "email" in form.changed_data:
             try:
-                obj.synchronize_outline()
+                obj.synchronize_to_outline()
                 success_message = f"L'adresse email « {obj.email} » a été invitée sur Outline et ajoutée au(x) groupe(s) adéquat(s)."
                 messages.success(request, success_message)
             except Exception:

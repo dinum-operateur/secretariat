@@ -12,7 +12,7 @@ class User(AbstractUser):
     def organisations(self):
         return Organisation.objects.filter(membership__user=self)
 
-    def synchronize_outline(self):
+    def synchronize_to_outline(self):
         from secretariat.utils.outline import Client as OutlineClient
         from secretariat.utils.outline import InvitationFailed
 
