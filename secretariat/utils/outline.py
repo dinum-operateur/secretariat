@@ -14,6 +14,10 @@ class RemoteServerError(OutlineAPIClientError):
     pass
 
 
+class InvalidRequest(OutlineAPIClientError):
+    pass
+
+
 class InvitationFailed(OutlineAPIClientError):
     pass
 
@@ -44,7 +48,13 @@ class Client:
                 ]
             },
         )
-        if response.status_code != 200:
+        if response.status_code == 400:
+            object = response.json()
+            raise InvalidRequest(
+                400, f"{object.get('error')} - {object.get('message')}"
+            )
+
+        if response.status_code >= 500:
             raise RemoteServerError(response.status_code)
 
         if len(response.json()["data"]["users"]) == 0:

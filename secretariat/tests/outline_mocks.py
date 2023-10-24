@@ -9,6 +9,65 @@ def json_response(status_code=200, content=""):
     return mock_response
 
 
+def invite_response_invalid_email():
+    return json_response(
+        400,
+        """{
+    "ok": false,
+    "error": "validation_error",
+    "status": 400,
+    "message": "email: Invalid email"
+}""",
+    )
+
+
+def invite_response_ok():
+    return json_response(
+        200,
+        """{
+    "data": {
+        "sent": [
+            {
+                "email": "tarik.ota@test.gouv.fr",
+                "name": "Tarik Ota",
+                "role": "member"
+            }
+        ],
+        "users": [
+            {
+                "id": "26985a73-9fc5-4c31-839c-51304daf2628",
+                "name": "Tarik Ota",
+                "avatarUrl": null,
+                "color": "#2BC2FF",
+                "isAdmin": false,
+                "isSuspended": false,
+                "isViewer": false,
+                "createdAt": "2023-10-24T14:45:51.889Z",
+                "updatedAt": "2023-10-24T14:45:51.889Z",
+                "lastActiveAt": null
+            }
+        ]
+    },
+    "status": 200,
+    "ok": true
+}""",
+    )
+
+
+def invite_response_already_invited():
+    return json_response(
+        200,
+        """{
+    "data": {
+        "sent": [],
+        "users": []
+    },
+    "status": 200,
+    "ok": true
+}""",
+    )
+
+
 def list_response_ok():
     return json_response(
         200,

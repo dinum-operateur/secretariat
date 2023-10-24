@@ -3,14 +3,17 @@ from unittest import mock
 from django.test import TestCase
 
 import secretariat.tests.outline_mocks as mocks
-from secretariat.utils.outline import Client, GroupCreationFailed, RemoteServerError
+from secretariat.tests.factories import UserFactory
+from secretariat.utils.outline import (
+    Client,
+    GroupCreationFailed,
+    InvalidRequest,
+    InvitationFailed,
+    RemoteServerError,
+)
 
 
 class TestOutlineClient(TestCase):
-    @classmethod
-    def setUpTestData(cls):
-        cls.tested = Client()
-
     @mock.patch("requests.post")
     def test_list_users_when_all_is_fine(self, mock_post):
         client = Client()
@@ -36,6 +39,54 @@ class TestOutlineClient(TestCase):
 
         exception = cm.exception
         self.assertEqual(exception.status_code, 401)
+
+        self.assertTrue(mock_post.called, "The client should send a POST request")
+
+    @mock.patch("requests.post")
+    def test_invite_user_when_all_is_fine(self, mock_post):
+        client = Client()
+        mock_post.return_value = mocks.invite_response_ok()
+
+        response = client.invite_to_outline(UserFactory())
+        self.assertTrue(mock_post.called, "The client should send a POST request")
+        self.assertEqual(
+            "26985a73-9fc5-4c31-839c-51304daf2628",
+            response,
+            "Response should be the UUID of the new user",
+        )
+
+    @mock.patch("requests.post")
+    def test_invite_already_invited_user(self, mock_post):
+        client = Client()
+        mock_post.return_value = mocks.invite_response_already_invited()
+        with self.assertRaises(InvitationFailed):
+            client.invite_to_outline(UserFactory())
+        self.assertTrue(mock_post.called, "The client should send a POST request")
+
+    @mock.patch("requests.post")
+    def test_invite_user_invalid_email(self, mock_post):
+        client = Client()
+        mock_post.return_value = mocks.invite_response_invalid_email()
+
+        with self.assertRaises(InvalidRequest) as cm:
+            client.invite_to_outline(UserFactory(email="agnès.ql@test.gouv.fr"))
+
+        exception = cm.exception
+        self.assertEqual(exception.status_code, 400)
+        self.assertIn("Invalid email", exception.error_message)
+
+        self.assertTrue(mock_post.called, "The client should send a POST request")
+
+    @mock.patch("requests.post")
+    def test_invite_when_outline_is_out(self, mock_post):
+        client = Client()
+        mock_post.return_value.status_code = 502
+
+        with self.assertRaises(RemoteServerError) as cm:
+            client.invite_to_outline(UserFactory())
+
+        exception = cm.exception
+        self.assertEqual(exception.status_code, 502)
 
         self.assertTrue(mock_post.called, "The client should send a POST request")
 
