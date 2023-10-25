@@ -73,7 +73,7 @@ class Client:
             },
         )
 
-    def list_users(self, query):
+    def list_users(self, query=""):
         response = requests.post(
             url=f"{self.url}/users.list",
             headers=self.headers,
