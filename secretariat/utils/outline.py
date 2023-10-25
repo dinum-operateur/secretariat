@@ -125,6 +125,36 @@ class Client:
         group_uuid = object["data"]["id"]
         return group_uuid
 
+    def list_groups(self, offset=0, limit=25):
+        response = requests.post(
+            url=f"{OUTLINE_API_URL}/groups.list",
+            headers=self.headers,
+            json={
+                "offset": offset,
+                "limit": limit,
+                "sort": "createdAt",
+                "direction": "ASC",
+            },
+        )
+        if response.status_code >= 500:
+            raise RemoteServerError(response.status_code)
+        object = response.json()
+        return object.get("data").get("groups")
+
+    def find_group_by_name(self, group_name):
+        offset = 0
+        step = 20
+        list = self.list_groups(offset, step)
+        matching_groups = [group for group in list if group["name"] == group_name]
+
+        while len(list) and not (len(matching_groups)):
+            offset += step
+            list = self.list_groups(offset, step)
+            matching_groups = [group for group in list if group["name"] == group_name]
+
+        if len(matching_groups):
+            return matching_groups[0]
+
     def remove_user_from_outline(self, user: User):
         requests.post(
             url=f"{OUTLINE_API_URL}/users.delete",
