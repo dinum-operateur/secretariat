@@ -20,7 +20,9 @@ class TestOutlineClient(TestCase):
         mock_post.return_value = mocks.list_response_ok()
 
         response = client.list_users("")
-        self.assertTrue(mock_post.called, "The client should send a POST request")
+        self.assertTrue(
+            mock_post.called, "A POST request should have been sent at some point"
+        )
         self.assertEqual(len(response), 1, "Response should contain a list of 1 user")
         first_user = response[0]
         self.assertEqual(
@@ -40,7 +42,9 @@ class TestOutlineClient(TestCase):
         exception = cm.exception
         self.assertEqual(exception.status_code, 401)
 
-        self.assertTrue(mock_post.called, "The client should send a POST request")
+        self.assertTrue(
+            mock_post.called, "A POST request should have been sent at some point"
+        )
 
     @mock.patch("requests.post")
     def test_invite_user_when_all_is_fine(self, mock_post):
@@ -48,7 +52,9 @@ class TestOutlineClient(TestCase):
         mock_post.return_value = mocks.invite_response_ok()
 
         response = client.invite_to_outline(UserFactory())
-        self.assertTrue(mock_post.called, "The client should send a POST request")
+        self.assertTrue(
+            mock_post.called, "A POST request should have been sent at some point"
+        )
         self.assertEqual(
             "26985a73-9fc5-4c31-839c-51304daf2628",
             response,
@@ -61,7 +67,9 @@ class TestOutlineClient(TestCase):
         mock_post.return_value = mocks.invite_response_already_invited()
         with self.assertRaises(InvitationFailed):
             client.invite_to_outline(UserFactory())
-        self.assertTrue(mock_post.called, "The client should send a POST request")
+        self.assertTrue(
+            mock_post.called, "A POST request should have been sent at some point"
+        )
 
     @mock.patch("requests.post")
     def test_invite_user_invalid_email(self, mock_post):
@@ -75,7 +83,9 @@ class TestOutlineClient(TestCase):
         self.assertEqual(exception.status_code, 400)
         self.assertIn("Invalid email", exception.error_message)
 
-        self.assertTrue(mock_post.called, "The client should send a POST request")
+        self.assertTrue(
+            mock_post.called, "A POST request should have been sent at some point"
+        )
 
     @mock.patch("requests.post")
     def test_invite_when_outline_is_out(self, mock_post):
@@ -88,7 +98,9 @@ class TestOutlineClient(TestCase):
         exception = cm.exception
         self.assertEqual(exception.status_code, 502)
 
-        self.assertTrue(mock_post.called, "The client should send a POST request")
+        self.assertTrue(
+            mock_post.called, "A POST request should have been sent at some point"
+        )
 
     @mock.patch("requests.post")
     def test_create_group_when_all_is_fine(self, mock_post):
@@ -109,4 +121,6 @@ class TestOutlineClient(TestCase):
             client.create_new_group("Oh le joli groupe ENCORE")
         exception = cm.exception
         self.assertEqual(exception.status_code, 400)
-        self.assertTrue(mock_post.called, "The client should send a POST request")
+        self.assertTrue(
+            mock_post.called, "A POST request should have been sent at some point"
+        )
