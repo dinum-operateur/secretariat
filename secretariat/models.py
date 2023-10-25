@@ -43,6 +43,21 @@ class Organisation(models.Model):
     def members(self):
         return User.objects.filter(membership__organisation=self)
 
+    def synchronize_to_outline(self):
+        from secretariat.utils.outline import Client as OutlineClient
+        from secretariat.utils.outline import GroupCreationFailed
+
+        client = OutlineClient()
+
+        if not self.outline_group_uuid:
+            try:
+                self.outline_uuid = client.create_new_group(self.name)
+                self.save()
+            except GroupCreationFailed:
+                outline_user = client.find_group_by_name(self.name)
+                self.outline_group_uuid = outline_user["id"]
+                self.save()
+
 
 class Membership(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
