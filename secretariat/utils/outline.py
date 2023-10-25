@@ -5,17 +5,25 @@ from secretariat.models import User
 
 
 class OutlineAPIClientError(Exception):
-    pass
+    def __init__(self, error_code, error_message=""):
+        self.status_code = error_code
+        self.error_message = error_message
 
 
 class RemoteServerError(OutlineAPIClientError):
-    def __init__(self, error_code):
-        self.status_code = error_code
+    pass
+
+
+class InvalidRequest(OutlineAPIClientError):
+    pass
 
 
 class InvitationFailed(OutlineAPIClientError):
-    def __init__(self, error_code):
-        self.status_code = error_code
+    pass
+
+
+class GroupCreationFailed(OutlineAPIClientError):
+    pass
 
 
 class Client:
@@ -40,18 +48,27 @@ class Client:
                 ]
             },
         )
+        if response.status_code == 400:
+            object = response.json()
+            raise InvalidRequest(
+                400, f"{object.get('error')} - {object.get('message')}"
+            )
+
+        if response.status_code >= 500:
+            raise RemoteServerError(response.status_code)
+
         if len(response.json()["data"]["users"]) == 0:
             raise InvitationFailed(response.status_code)
 
         user_uuid = response.json()["data"]["users"][0]["id"]
         return user_uuid
 
-    def add_to_outline_group(self, user_uuid, group):
+    def add_to_outline_group(self, user_uuid, group_uuid):
         requests.post(
             url=f"{self.url}/groups.add_user",
             headers=self.headers,
             json={
-                "id": group,
+                "id": group_uuid,
                 "userId": user_uuid,
             },
         )
@@ -73,3 +90,46 @@ class Client:
             raise RemoteServerError(response.status_code)
 
         return response.json()["data"]
+
+    def find_user_from_email(self, email):
+        response = requests.post(
+            url=f"{self.url}/users.list",
+            headers=self.headers,
+            json={
+                "offset": 0,
+                "limit": 1,
+                "emails": [email],
+            },
+        )
+        if response.status_code != 200:
+            raise RemoteServerError(response.status_code)
+
+        return response.json()["data"][0]
+
+    def create_new_group(self, group_name):
+        response = requests.post(
+            url=f"{self.url}/groups.create",
+            headers=self.headers,
+            json={"name": group_name},
+        )
+        if response.status_code >= 500:
+            raise RemoteServerError(response.status_code)
+
+        if response.status_code == 400:
+            object = response.json()
+            raise GroupCreationFailed(
+                400, f"{object.get('error')} - {object.get('message')}"
+            )
+
+        object = response.json()
+        group_uuid = object["data"]["id"]
+        return group_uuid
+
+    def remove_user_from_outline(self, user: User):
+        requests.post(
+            url=f"{OUTLINE_API_URL}/users.delete",
+            headers=self.headers,
+            json={
+                "id": user.outline_uuid,
+            },
+        )

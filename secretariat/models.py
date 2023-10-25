@@ -12,6 +12,25 @@ class User(AbstractUser):
     def organisations(self):
         return Organisation.objects.filter(membership__user=self)
 
+    def synchronize_to_outline(self):
+        from secretariat.utils.outline import Client as OutlineClient
+        from secretariat.utils.outline import InvitationFailed
+
+        client = OutlineClient()
+
+        if not self.outline_uuid:
+            try:
+                self.outline_uuid = client.invite_to_outline(self)
+                self.save()
+            except InvitationFailed:
+                outline_user = client.find_user_from_email(self.email)
+                self.outline_uuid = outline_user["id"]
+                self.save()
+
+        for group in self.organisations:
+            if group.outline_uuid:
+                client.add_to_outline_group(self.outline_uuid, group.outline_group_uuid)
+
 
 class Organisation(models.Model):
     name = models.CharField(max_length=50)
