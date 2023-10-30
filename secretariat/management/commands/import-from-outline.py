@@ -23,7 +23,7 @@ class Command(BaseCommand):
                 self.style.ERROR("Couldn't not reach remote server. Exiting.")
             )
 
-        known_emails = [user.email for user in User.objects.all()]
+        known_emails = [value[0] for value in User.objects.values_list("email")]
         count_existing_users, count_new_users, count_mismatched = 0, 0, 0
 
         for user in outline_users:
