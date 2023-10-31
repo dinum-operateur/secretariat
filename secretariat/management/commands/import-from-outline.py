@@ -1,5 +1,6 @@
 from django.contrib.auth import get_user_model
 from django.core.management.base import BaseCommand
+from django.db.utils import IntegrityError
 
 from config.settings import OUTLINE_API_URL
 from secretariat.utils.outline import Client as OutlineClient
@@ -24,7 +25,7 @@ class Command(BaseCommand):
             )
 
         known_emails = [value[0] for value in User.objects.values_list("email")]
-        count_existing_users, count_new_users, count_mismatched = 0, 0, 0
+        count_existing_users, count_new_users, count_errors = 0, 0, 0
 
         for user in outline_users:
             if user["email"] in known_emails:
@@ -50,19 +51,33 @@ class Command(BaseCommand):
                             f"{prompt_already_existing}. Unexpected UUID (django: '{django_user.outline_uuid}', outline: '{user['id']}')."
                         )
                     )
-                    count_mismatched += 1
+                    count_errors += 1
             else:
-                new_user = User(
-                    username=user["name"].replace(" ", "").lower(),
-                    first_name=user["name"].split(" ")[0],
-                    last_name=" ".join(user["name"].split(" ")[1:]),
-                    email=user["email"],
-                    outline_uuid=user["id"],
-                )
-                new_user.save()
-                count_new_users += 1
-                self.stdout.write(f'Creating user {user["name"]}')
+                try:
+                    self.create_new_django_user(user)
+                except IntegrityError:
+                    count_errors += 1
 
         self.stdout.write(f"\nMatched {count_existing_users} existing users.")
         self.stdout.write(f"Created {count_new_users} new django users.")
-        self.stdout.write(self.style.ERROR(f"{count_mismatched} mismatched."))
+        self.stdout.write(self.style.ERROR(f"{count_errors} errors."))
+
+    def create_new_django_user(self, outline_user):
+        django_user = User(
+            username=outline_user["name"].replace(" ", "").lower(),
+            first_name=outline_user["name"].split(" ")[0],
+            last_name=" ".join(outline_user["name"].split(" ")[1:]),
+            email=outline_user["email"],
+            outline_uuid=outline_user["id"],
+        )
+        try:
+            django_user.save()
+        except IntegrityError as error:
+            self.stdout.write(
+                self.style.ERROR(
+                    f"Impossible d'ajouter '{django_user.username}' car cet username existe déjà dans Django. Veuillez choisir un username différent ou supprimer le doublon avant de réessayer."
+                )
+            )
+            raise error
+
+        self.stdout.write(f'Creating user {outline_user["name"]}')
