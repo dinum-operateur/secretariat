@@ -28,14 +28,13 @@ class Command(BaseCommand):
 
         for user in outline_users:
             if user["email"] in known_emails:
-                count_existing_users += 1
                 django_user = User.objects.get(email=user["email"])
 
                 prompt_already_existing = (
                     f'Email {user["email"]} already on secretariat app'
                 )
-                if django_user.outline_uuid == user["id"]:
-                    self.stdout.write(f"{prompt_already_existing}.")
+                if str(django_user.outline_uuid) == user["id"]:
+                    count_existing_users += 1
                 elif django_user.outline_uuid is None:
                     self.stdout.write(
                         self.style.WARNING(
@@ -58,7 +57,7 @@ class Command(BaseCommand):
                     count_errors += 1
 
         self.stdout.write(f"\nMatched {count_existing_users} existing users.")
-        self.stdout.write(f"Created {count_new_users} new django users.")
+        self.stdout.write(f"Created {count_new_users} new Django users.")
         self.stdout.write(self.style.ERROR(f"{count_errors} errors."))
 
     def create_new_django_user(self, outline_user):
