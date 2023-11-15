@@ -159,6 +159,6 @@ CSP_IMG_SRC = "'self' data:"
 
 REFERRER_POLICY = "same-origin"
 
-OUTLINE_API_URL = os.getenv("OUTLINE_API_URL")
+OUTLINE_URL = os.getenv("OUTLINE_URL")
 OUTLINE_API_TOKEN = os.getenv("OUTLINE_API_TOKEN")
 OUTLINE_OPI_GROUP_ID = os.getenv("OUTLINE_OPI_GROUP_ID")

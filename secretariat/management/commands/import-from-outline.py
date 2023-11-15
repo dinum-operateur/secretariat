@@ -2,7 +2,7 @@ from django.contrib.auth import get_user_model
 from django.core.management.base import BaseCommand
 from django.db.utils import IntegrityError
 
-from config.settings import OUTLINE_API_URL
+from config.settings import OUTLINE_URL
 from secretariat.utils.outline import Client as OutlineClient
 from secretariat.utils.outline import RemoteServerError
 
@@ -15,14 +15,13 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         client = OutlineClient()
 
-        self.stdout.write(f"Importing users from instance {OUTLINE_API_URL}.")
+        self.stdout.write(f"Importing users from instance {OUTLINE_URL} .")
 
         try:
             outline_users = client.list_users()
         except RemoteServerError:
-            self.stdout.write(
-                self.style.ERROR("Couldn't not reach remote server. Exiting.")
-            )
+            self.stdout.write(self.style.ERROR("Cannot reach remote server."))
+            exit()
 
         known_emails = [value[0] for value in User.objects.values_list("email")]
         count_existing_users, count_new_users, count_errors = 0, 0, 0

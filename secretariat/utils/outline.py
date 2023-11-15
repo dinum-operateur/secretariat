@@ -1,6 +1,6 @@
 import requests
 
-from config.settings import OUTLINE_API_TOKEN, OUTLINE_API_URL
+from config.settings import OUTLINE_API_TOKEN, OUTLINE_URL
 from secretariat.models import User
 
 
@@ -27,7 +27,7 @@ class GroupCreationFailed(OutlineAPIClientError):
 
 
 class Client:
-    url = OUTLINE_API_URL
+    url = OUTLINE_URL
     headers = {
         "Content-Type": "application/json",
         "Accept": "application/json",
@@ -36,7 +36,7 @@ class Client:
 
     def invite_to_outline(self, user: User):
         response = requests.post(
-            url=f"{self.url}/users.invite",
+            url=f"{self.url}/api/users.invite",
             headers=self.headers,
             json={
                 "invites": [
@@ -65,7 +65,7 @@ class Client:
 
     def add_to_outline_group(self, user_uuid, group_uuid):
         requests.post(
-            url=f"{self.url}/groups.add_user",
+            url=f"{self.url}/api/groups.add_user",
             headers=self.headers,
             json={
                 "id": group_uuid,
@@ -75,7 +75,7 @@ class Client:
 
     def list_users(self, query=""):
         response = requests.post(
-            url=f"{self.url}/users.list",
+            url=f"{self.url}/api/users.list",
             headers=self.headers,
             json={
                 "offset": 0,
@@ -93,7 +93,7 @@ class Client:
 
     def find_user_from_email(self, email):
         response = requests.post(
-            url=f"{self.url}/users.list",
+            url=f"{self.url}/api/users.list",
             headers=self.headers,
             json={
                 "offset": 0,
@@ -108,7 +108,7 @@ class Client:
 
     def create_new_group(self, group_name):
         response = requests.post(
-            url=f"{self.url}/groups.create",
+            url=f"{self.url}/api/groups.create",
             headers=self.headers,
             json={"name": group_name},
         )
@@ -157,7 +157,7 @@ class Client:
 
     def remove_user_from_outline(self, user: User):
         requests.post(
-            url=f"{OUTLINE_API_URL}/users.delete",
+            url=f"{self.url}/api/users.delete",
             headers=self.headers,
             json={
                 "id": user.outline_uuid,
