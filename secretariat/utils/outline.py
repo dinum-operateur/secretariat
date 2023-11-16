@@ -48,10 +48,11 @@ class Client:
                 ]
             },
         )
-        if response.status_code == 400:
+        if 400 <= response.status_code < 500:
             response = response.json()
             raise InvalidRequest(
-                400, f"{response.get('error')} - {response.get('message')}"
+                response.status_code,
+                f"{response.get('error')} - {response.get('message')}",
             )
 
         if response.status_code >= 500:
