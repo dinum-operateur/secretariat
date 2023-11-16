@@ -23,7 +23,7 @@ class Command(BaseCommand):
             self.stdout.write(self.style.ERROR("Cannot reach remote server."))
             exit()
 
-        known_emails = [value[0] for value in User.objects.values_list("email")]
+        known_emails = set(value[0] for value in User.objects.values_list("email"))
         count_existing_users, count_new_users, count_errors = 0, 0, 0
 
         for user in outline_users:
