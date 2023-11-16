@@ -58,6 +58,18 @@ class Organisation(models.Model):
                 self.outline_group_uuid = outline_user["id"]
                 self.save()
 
+        # create users on outline when needed
+        for new_member in self.members.filter(outline_uuid__isnull=True):
+            new_member.synchronize_to_outline()
+
+        # add outline users to outline group
+        for new_member in self.members.filter(outline_uuid__isnull=False):
+            client.add_to_outline_group(
+                new_member.outline_uuid, self.outline_group_uuid
+            )
+
+        # remove users from outline group which are not in django group
+
 
 class Membership(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
