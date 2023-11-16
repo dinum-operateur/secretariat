@@ -49,9 +49,9 @@ class Client:
             },
         )
         if response.status_code == 400:
-            object = response.json()
+            response = response.json()
             raise InvalidRequest(
-                400, f"{object.get('error')} - {object.get('message')}"
+                400, f"{response.get('error')} - {response.get('message')}"
             )
 
         if response.status_code >= 500:
@@ -116,13 +116,12 @@ class Client:
             raise RemoteServerError(response.status_code)
 
         if response.status_code == 400:
-            object = response.json()
+            response = response.json()
             raise GroupCreationFailed(
-                400, f"{object.get('error')} - {object.get('message')}"
+                400, f"{response.get('error')} - {response.get('message')}"
             )
 
-        object = response.json()
-        group_uuid = object["data"]["id"]
+        group_uuid = response.json()["data"]["id"]
         return group_uuid
 
     def list_groups(self, offset=0, limit=25):
@@ -138,19 +137,20 @@ class Client:
         )
         if response.status_code >= 500:
             raise RemoteServerError(response.status_code)
-        object = response.json()
-        return object.get("data").get("groups")
+        return response.json().get("data").get("groups")
 
     def find_group_by_name(self, group_name):
         offset = 0
         step = 20
-        list = self.list_groups(offset, step)
-        matching_groups = [group for group in list if group["name"] == group_name]
+        group_list = self.list_groups(offset, step)
+        matching_groups = [group for group in group_list if group["name"] == group_name]
 
-        while len(list) and not (len(matching_groups)):
+        while len(group_list) and not (len(matching_groups)):
             offset += step
-            list = self.list_groups(offset, step)
-            matching_groups = [group for group in list if group["name"] == group_name]
+            group_list = self.list_groups(offset, step)
+            matching_groups = [
+                group for group in group_list if group["name"] == group_name
+            ]
 
         if len(matching_groups):
             return matching_groups[0]

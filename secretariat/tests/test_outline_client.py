@@ -3,7 +3,7 @@ from unittest import mock, skipUnless
 from django.test import TestCase
 
 import secretariat.tests.outline_mocks as mocks
-from config.settings import OUTLINE_API_TOKEN, OUTLINE_API_URL, OUTLINE_OPI_GROUP_ID
+from config.settings import OUTLINE_API_TOKEN, OUTLINE_OPI_GROUP_ID, OUTLINE_URL
 from secretariat.tests.factories import UserFactory
 from secretariat.utils.outline import (
     Client,
@@ -127,7 +127,7 @@ class TestOutlineClient(TestCase):
         )
 
     @skipUnless(
-        OUTLINE_API_TOKEN and OUTLINE_API_URL and OUTLINE_OPI_GROUP_ID,
+        OUTLINE_API_TOKEN and OUTLINE_URL and OUTLINE_OPI_GROUP_ID,
         "Skip test in case of missing outline configuration",
     )
     def test_find_group_by_name(self):
