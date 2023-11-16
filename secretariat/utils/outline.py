@@ -1,6 +1,6 @@
 import requests
 
-from config.settings import OUTLINE_API_TOKEN, OUTLINE_API_URL
+from config.settings import OUTLINE_API_TOKEN, OUTLINE_URL
 from secretariat.models import User
 
 
@@ -27,7 +27,7 @@ class GroupCreationFailed(OutlineAPIClientError):
 
 
 class Client:
-    url = OUTLINE_API_URL
+    api_url = OUTLINE_URL + "/api"
     headers = {
         "Content-Type": "application/json",
         "Accept": "application/json",
@@ -36,7 +36,7 @@ class Client:
 
     def invite_to_outline(self, user: User):
         response = requests.post(
-            url=f"{self.url}/users.invite",
+            url=f"{self.api_url}/users.invite",
             headers=self.headers,
             json={
                 "invites": [
@@ -49,9 +49,9 @@ class Client:
             },
         )
         if response.status_code == 400:
-            object = response.json()
+            response = response.json()
             raise InvalidRequest(
-                400, f"{object.get('error')} - {object.get('message')}"
+                400, f"{response.get('error')} - {response.get('message')}"
             )
 
         if response.status_code >= 500:
@@ -65,7 +65,7 @@ class Client:
 
     def add_to_outline_group(self, user_uuid, group_uuid):
         requests.post(
-            url=f"{self.url}/groups.add_user",
+            url=f"{self.api_url}/groups.add_user",
             headers=self.headers,
             json={
                 "id": group_uuid,
@@ -73,13 +73,13 @@ class Client:
             },
         )
 
-    def list_users(self, query):
+    def list_users(self, query="", offset=0, limit=25):
         response = requests.post(
-            url=f"{self.url}/users.list",
+            url=f"{self.api_url}/users.list",
             headers=self.headers,
             json={
-                "offset": 0,
-                "limit": 25,
+                "offset": offset,
+                "limit": limit,
                 "sort": "updatedAt",
                 "direction": "DESC",
                 "query": query,
@@ -93,7 +93,7 @@ class Client:
 
     def find_user_from_email(self, email):
         response = requests.post(
-            url=f"{self.url}/users.list",
+            url=f"{self.api_url}/users.list",
             headers=self.headers,
             json={
                 "offset": 0,
@@ -108,7 +108,7 @@ class Client:
 
     def create_new_group(self, group_name):
         response = requests.post(
-            url=f"{self.url}/groups.create",
+            url=f"{self.api_url}/groups.create",
             headers=self.headers,
             json={"name": group_name},
         )
@@ -116,18 +116,17 @@ class Client:
             raise RemoteServerError(response.status_code)
 
         if response.status_code == 400:
-            object = response.json()
+            response = response.json()
             raise GroupCreationFailed(
-                400, f"{object.get('error')} - {object.get('message')}"
+                400, f"{response.get('error')} - {response.get('message')}"
             )
 
-        object = response.json()
-        group_uuid = object["data"]["id"]
+        group_uuid = response.json()["data"]["id"]
         return group_uuid
 
     def list_groups(self, offset=0, limit=25):
         response = requests.post(
-            url=f"{OUTLINE_API_URL}/groups.list",
+            url=f"{self.api_url}/groups.list",
             headers=self.headers,
             json={
                 "offset": offset,
@@ -138,26 +137,27 @@ class Client:
         )
         if response.status_code >= 500:
             raise RemoteServerError(response.status_code)
-        object = response.json()
-        return object.get("data").get("groups")
+        return response.json().get("data").get("groups")
 
     def find_group_by_name(self, group_name):
         offset = 0
         step = 20
-        list = self.list_groups(offset, step)
-        matching_groups = [group for group in list if group["name"] == group_name]
+        group_list = self.list_groups(offset, step)
+        matching_groups = [group for group in group_list if group["name"] == group_name]
 
-        while len(list) and not (len(matching_groups)):
+        while len(group_list) and not (len(matching_groups)):
             offset += step
-            list = self.list_groups(offset, step)
-            matching_groups = [group for group in list if group["name"] == group_name]
+            group_list = self.list_groups(offset, step)
+            matching_groups = [
+                group for group in group_list if group["name"] == group_name
+            ]
 
         if len(matching_groups):
             return matching_groups[0]
 
     def remove_user_from_outline(self, user: User):
         requests.post(
-            url=f"{OUTLINE_API_URL}/users.delete",
+            url=f"{self.api_url}/users.delete",
             headers=self.headers,
             json={
                 "id": user.outline_uuid,

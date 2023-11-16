@@ -11,6 +11,12 @@ Ce produit contiendra des utilitaires pour les agents et presta de l'opérateur 
 python manage.py runserver
 ```
 
+## Usage 
+
+### Pour synchroniser les utilisatrices et utilisateurs d'Outline vers cette app
+
+`python manage.py import-from-outline`
+
 ## Installation
 
 ### Installer l'environnement
