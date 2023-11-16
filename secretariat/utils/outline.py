@@ -156,6 +156,22 @@ class Client:
         if len(matching_groups):
             return matching_groups[0]
 
+    def list_group_users(self, group_id, offset=0, limit=25):
+        response = requests.post(
+            url=f"{self.api_url}/groups.memberships",
+            headers=self.headers,
+            json={
+                "offset": offset,
+                "limit": limit,
+                "sort": "createdAt",
+                "direction": "ASC",
+                "id": str(group_id),
+            },
+        )
+        if response.status_code >= 500:
+            raise RemoteServerError(response.status_code)
+        return response.json().get("data").get("users")
+
     def remove_user_from_outline(self, user: User):
         requests.post(
             url=f"{self.api_url}/users.delete",
