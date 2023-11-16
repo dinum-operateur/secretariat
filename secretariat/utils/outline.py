@@ -69,8 +69,8 @@ class Client:
             url=f"{self.api_url}/groups.add_user",
             headers=self.headers,
             json={
-                "id": group_uuid,
-                "userId": user_uuid,
+                "id": str(group_uuid),
+                "userId": str(user_uuid),
             },
         )
 
@@ -161,6 +161,6 @@ class Client:
             url=f"{self.api_url}/users.delete",
             headers=self.headers,
             json={
-                "id": user.outline_uuid,
+                "id": str(user.outline_uuid),
             },
         )
