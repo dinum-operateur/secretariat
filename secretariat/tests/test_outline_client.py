@@ -107,7 +107,7 @@ class TestOutlineClient(TestCase):
     def test_create_group_when_all_is_fine(self, mock_post):
         client = Client()
         mock_post.return_value = mocks.group_creation_ok()
-        uuid = client.create_new_group("Oh le joli groupe")
+        uuid = client.create_new_group("Ce groupe va se créer facilement")
         self.assertEqual(
             uuid,
             "29907d66-d23f-46e9-be9b-92e2820b81aa",
@@ -132,6 +132,7 @@ class TestOutlineClient(TestCase):
     )
     def test_find_group_by_name(self):
         client = Client()
-        group = client.find_group_by_name("Oh le joli groupe")
+        my_group_name = "Oh le joli groupe"
+        group = client.find_group_by_name(my_group_name)
         self.assertEqual("9a33fcb1", group.get("id")[:8])
-        self.assertEqual("Oh le joli groupe", group.get("name"))
+        self.assertEqual(my_group_name, group.get("name"))
