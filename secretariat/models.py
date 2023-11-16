@@ -28,7 +28,7 @@ class User(AbstractUser):
                 self.save()
 
         for group in self.organisations:
-            if group.outline_uuid:
+            if group.outline_group_uuid:
                 client.add_to_outline_group(self.outline_uuid, group.outline_group_uuid)
 
 
