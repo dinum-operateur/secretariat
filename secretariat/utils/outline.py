@@ -73,13 +73,13 @@ class Client:
             },
         )
 
-    def list_users(self, query=""):
+    def list_users(self, query="", offset=0, limit=25):
         response = requests.post(
             url=f"{self.api_url}/users.list",
             headers=self.headers,
             json={
-                "offset": 0,
-                "limit": 25,
+                "offset": offset,
+                "limit": limit,
                 "sort": "updatedAt",
                 "direction": "DESC",
                 "query": query,
@@ -127,7 +127,7 @@ class Client:
 
     def list_groups(self, offset=0, limit=25):
         response = requests.post(
-            url=f"{OUTLINE_API_URL}/groups.list",
+            url=f"{self.api_url}/groups.list",
             headers=self.headers,
             json={
                 "offset": offset,

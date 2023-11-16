@@ -18,7 +18,15 @@ class Command(BaseCommand):
         self.stdout.write(f"Importing users from instance {OUTLINE_URL} .")
 
         try:
-            outline_users = client.list_users()
+            offset = 0
+            limit = 25
+            outline_users = []
+            users_page = None
+            while users_page != []:
+                users_page = client.list_users(offset=offset, limit=limit)
+                outline_users += users_page
+                offset += 25
+
         except RemoteServerError:
             self.stdout.write(self.style.ERROR("Cannot reach remote server."))
             exit()
