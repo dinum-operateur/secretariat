@@ -1,6 +1,7 @@
 from django.contrib import admin, messages
 
 from secretariat.models import Membership, Organisation, User
+from secretariat.utils.outline import GroupCreationFailed
 
 
 class MembershipInline(admin.TabularInline):
@@ -68,6 +69,23 @@ class UserAdmin(admin.ModelAdmin):
                 messages.warning(request, error_message)
 
 
+@admin.action(description="Synchroniser les organisations vers Outline")
+def sync_organisations_with_outline(_, request, queryset):
+    for organisation in queryset:
+        try:
+            organisation.synchronize_to_outline()
+            messages.success(
+                request,
+                f"Le groupe « {organisation.name}» a bien été synchronisé vers Outline.",
+            )
+        except GroupCreationFailed:
+            messages.error(
+                request,
+                f"Impossible de créer le groupe Outline « {organisation.name}».",
+            )
+
+
 @admin.register(Organisation)
 class OrganisationAdmin(admin.ModelAdmin):
     inlines = [MembershipInlineForOrganisation]
+    actions = (sync_organisations_with_outline,)
