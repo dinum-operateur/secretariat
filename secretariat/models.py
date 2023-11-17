@@ -1,4 +1,5 @@
 from django.contrib.auth.models import AbstractUser
+from django.core.exceptions import ValidationError
 from django.db import models
 
 
@@ -91,3 +92,11 @@ class Membership(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     organisation = models.ForeignKey(Organisation, on_delete=models.CASCADE)
     role = models.CharField(max_length=15)
+    start_date = models.DateField(null=True, blank=True)
+    end_date = models.DateField(null=True, blank=True)
+
+    def clean(self):
+        if self.start_date > self.end_date:
+            raise ValidationError(
+                {"end_date": "La date de fin ne peut pas être avant la date de début."}
+            )
