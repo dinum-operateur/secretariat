@@ -51,7 +51,7 @@ class Organisation(models.Model):
 
         if not self.outline_group_uuid:
             try:
-                self.outline_uuid = client.create_new_group(self.name)
+                self.outline_group_uuid = client.create_new_group(self.name)
                 self.save()
             except GroupCreationFailed:
                 outline_user = client.find_group_by_name(self.name)
