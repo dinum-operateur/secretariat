@@ -74,6 +74,16 @@ class Client:
             },
         )
 
+    def remove_from_outline_group(self, user_uuid, group_uuid):
+        requests.post(
+            url=f"{self.api_url}/groups.remove_user",
+            headers=self.headers,
+            json={
+                "id": str(group_uuid),
+                "userId": str(user_uuid),
+            },
+        )
+
     def list_users(self, query="", offset=0, limit=25):
         response = requests.post(
             url=f"{self.api_url}/users.list",

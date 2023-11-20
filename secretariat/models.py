@@ -85,8 +85,7 @@ class Organisation(models.Model):
             user_uuids_in_outline_group - user_uuids_in_django_group
         )
         for uuid in user_uuids_to_remove_from_outline_group:
-            # todo: write client method to remove a user from a group
-            print(uuid)
+            client.remove_from_outline_group(uuid, self.outline_group_uuid)
 
 
 class Membership(models.Model):
