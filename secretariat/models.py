@@ -1,6 +1,7 @@
 from django.contrib.auth.models import AbstractUser
 from django.core.exceptions import ValidationError
 from django.db import models
+from django.db.models import CheckConstraint, F, Q
 
 
 class User(AbstractUser):
@@ -94,6 +95,14 @@ class Membership(models.Model):
     role = models.CharField(max_length=15)
     start_date = models.DateField(null=True, blank=True)
     end_date = models.DateField(null=True, blank=True)
+
+    class Meta:
+        constraints = [
+            CheckConstraint(
+                check=Q(end_date__gt=F("start_date")),
+                name="start_must_be_before_end",
+            ),
+        ]
 
     def clean(self):
         if self.start_date > self.end_date:

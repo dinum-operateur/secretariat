@@ -1,5 +1,8 @@
 from unittest.mock import patch
 
+from datetime import timedelta
+
+from django.core.exceptions import ValidationError
 from django.test import TestCase
 
 from secretariat.models import Organisation, User
@@ -53,3 +56,9 @@ class TestMembership(TestCase):
                 test_uuid,
                 "organisation.outline_group_uuid should be the one returned by Outline after first sync",
             )
+    def test_membership_cannot_end_before_beginning(self):
+        membership = MembershipFactory()
+        self.assertTrue(membership.start_date < membership.end_date)
+        with self.assertRaises(ValidationError):
+            membership.start_date = membership.end_date + timedelta(days=100)
+            membership.full_clean()
