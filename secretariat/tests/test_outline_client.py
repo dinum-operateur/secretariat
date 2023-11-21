@@ -126,6 +126,28 @@ class TestOutlineClient(TestCase):
             mock_post.called, "A POST request should have been sent at some point"
         )
 
+    @mock.patch("requests.post")
+    def test_list_group_users_with_pagination(self, mock_post):
+        client = Client()
+        mock_post.side_effect = [
+            mocks.group_memberships_first(),
+            mocks.group_memberships_second(),
+            mocks.group_memberships_third(),
+        ]
+        users_emails = [
+            user.get("email") for user in client.list_group_users("any_group_id")
+        ]
+        self.assertEqual(
+            len(users_emails), 3, "should return 3 users with different emails"
+        )
+        self.assertEqual(users_emails[0], "user1@example.com")
+        self.assertEqual(users_emails[1], "user2@example.com")
+        self.assertEqual(users_emails[2], "user3@example.com")
+
+        self.assertTrue(
+            mock_post.called, "A POST request should have been sent at some point"
+        )
+
     @skipUnless(
         OUTLINE_API_TOKEN and OUTLINE_URL and OUTLINE_OPI_GROUP_ID,
         "Skip test in case of missing outline configuration",
