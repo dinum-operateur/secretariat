@@ -27,7 +27,7 @@ class GroupCreationFailed(OutlineAPIClientError):
 
 
 class Client:
-    api_url = f"{OUTLINE_URL}OUTLINE_URL/api"
+    api_url = f"{OUTLINE_URL}/api"
     headers = {
         "Content-Type": "application/json",
         "Accept": "application/json",
