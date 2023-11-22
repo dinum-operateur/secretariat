@@ -64,7 +64,6 @@ class Organisation(models.Model):
 
         # find users which already are in the group on outline side:
         # no need to add them again
-        # todo: pagination here
         user_uuids_in_outline_group = set(
             user.get("id") for user in client.list_group_users(self.outline_group_uuid)
         )
