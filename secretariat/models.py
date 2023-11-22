@@ -105,7 +105,10 @@ class Membership(models.Model):
         ]
 
     def clean(self):
-        if self.start_date > self.end_date:
-            raise ValidationError(
-                {"end_date": "La date de fin ne peut pas être avant la date de début."}
-            )
+        if self.start_date is not None and self.end_date is not None:
+            if self.start_date > self.end_date:
+                raise ValidationError(
+                    {
+                        "end_date": "La date de fin ne peut pas être avant la date de début."
+                    }
+                )

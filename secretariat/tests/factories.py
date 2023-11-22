@@ -30,6 +30,4 @@ class MembershipFactory(DjangoModelFactory):
 
     user = factory.SubFactory(UserFactory)
     organisation = factory.SubFactory(OrganisationFactory)
-    start_date = Faker("date_between", start_date="-3y", end_date="+1y")
-    end_date = Faker("date_between", start_date="+1y", end_date="+3y")
     role = "member"
