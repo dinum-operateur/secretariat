@@ -1,3 +1,5 @@
+from unittest.mock import patch
+
 from django.test import TestCase
 
 from secretariat.models import Organisation, User
@@ -31,4 +33,23 @@ class TestMembership(TestCase):
         for user in organisation.members:
             self.assertIsInstance(
                 user, User, "objects of organisation.members should be Users"
+            )
+
+    def test_synchro_with_outline(self):
+        test_uuid = "99cb30d7-833d-4d0a-ba70-a0403fc72554"
+        with patch("secretariat.utils.outline.Client") as MockedOutlineClient:
+            mocked_client_instance = MockedOutlineClient.return_value
+            mocked_client_instance.create_new_group.return_value = test_uuid
+
+            organisation = OrganisationFactory()
+            self.assertIsNone(
+                organisation.outline_group_uuid,
+                "organisation.outline_group_uuid should be None before first sync",
+            )
+
+            organisation.synchronize_to_outline()
+            self.assertEqual(
+                organisation.outline_group_uuid,
+                test_uuid,
+                "organisation.outline_group_uuid should be the one returned by Outline after first sync",
             )

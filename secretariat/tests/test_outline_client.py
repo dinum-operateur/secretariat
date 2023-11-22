@@ -1,8 +1,9 @@
-from unittest import mock
+from unittest import mock, skipUnless
 
 from django.test import TestCase
 
 import secretariat.tests.outline_mocks as mocks
+from config.settings import OUTLINE_API_TOKEN, OUTLINE_OPI_GROUP_ID, OUTLINE_URL
 from secretariat.tests.factories import UserFactory
 from secretariat.utils.outline import (
     Client,
@@ -106,7 +107,7 @@ class TestOutlineClient(TestCase):
     def test_create_group_when_all_is_fine(self, mock_post):
         client = Client()
         mock_post.return_value = mocks.group_creation_ok()
-        uuid = client.create_new_group("Oh le joli groupe")
+        uuid = client.create_new_group("Ce groupe va se créer facilement")
         self.assertEqual(
             uuid,
             "29907d66-d23f-46e9-be9b-92e2820b81aa",
@@ -124,3 +125,36 @@ class TestOutlineClient(TestCase):
         self.assertTrue(
             mock_post.called, "A POST request should have been sent at some point"
         )
+
+    @mock.patch("requests.post")
+    def test_list_group_users_with_pagination(self, mock_post):
+        client = Client()
+        mock_post.side_effect = [
+            mocks.group_memberships_first(),
+            mocks.group_memberships_second(),
+            mocks.group_memberships_third(),
+        ]
+        users_emails = [
+            user.get("email") for user in client.list_group_users("any_group_id")
+        ]
+        self.assertEqual(
+            len(users_emails), 3, "should return 3 users with different emails"
+        )
+        self.assertEqual(users_emails[0], "user1@example.com")
+        self.assertEqual(users_emails[1], "user2@example.com")
+        self.assertEqual(users_emails[2], "user3@example.com")
+
+        self.assertTrue(
+            mock_post.called, "A POST request should have been sent at some point"
+        )
+
+    @skipUnless(
+        OUTLINE_API_TOKEN and OUTLINE_URL and OUTLINE_OPI_GROUP_ID,
+        "Skip test in case of missing outline configuration",
+    )
+    def test_find_group_by_name(self):
+        client = Client()
+        my_group_name = "Oh le joli groupe"
+        group = client.find_group_by_name(my_group_name)
+        self.assertEqual("9a33fcb1", group.get("id")[:8])
+        self.assertEqual(my_group_name, group.get("name"))

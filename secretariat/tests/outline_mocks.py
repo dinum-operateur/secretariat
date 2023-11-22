@@ -134,3 +134,133 @@ def group_creation_ko_already_exists():
 }
     """,
     )
+
+
+def group_memberships_first():
+    return json_response(
+        200,
+        """{
+    "data":
+{
+    "users":
+[
+    {
+        "id": "497f6eca-6276-4993-bfeb-53cbbbba6f08",
+        "name": "Jane Doe",
+        "avatarUrl": "http://example.com",
+        "email": "user1@example.com",
+        "isAdmin": true,
+        "isSuspended": true,
+        "lastActiveAt": "2019-08-24T14:15:22Z",
+        "createdAt": "2019-08-24T14:15:22Z"
+    },
+    {
+        "id": "597f6eca-6276-4993-bfeb-53cbbbba6f08",
+        "name": "John Doe",
+        "avatarUrl": "http://example.com",
+        "email": "user2@example.com",
+        "isAdmin": true,
+        "isSuspended": true,
+        "lastActiveAt": "2019-08-24T14:15:22Z",
+        "createdAt": "2019-08-24T14:15:22Z"
+    }
+],
+"groupMemberships":
+[
+{
+    "id": "string",
+    "groupId": "eb54e96e-21b8-4f54-9cd4-80fccbd06f55",
+    "userId": "2c4a230c-5085-4924-a3e1-25fb4fc5965b",
+    "user":
+            {
+                "id": "497f6eca-6276-4993-bfeb-53cbbbba6f08",
+                "name": "Jane Doe",
+                "avatarUrl": "http://example.com",
+                "email": "user1@example.com",
+                "isAdmin": true,
+                "isSuspended": true,
+                "lastActiveAt": "2019-08-24T14:15:22Z",
+                "createdAt": "2019-08-24T14:15:22Z"
+            }
+        }
+    ]
+},
+"pagination":
+    {
+        "offset": 0,
+        "limit": 25
+    }
+}
+    """,
+    )
+
+
+def group_memberships_second():
+    return json_response(
+        200,
+        """{
+    "data":
+{
+    "users":
+[
+    {
+        "id": "697f6eca-6276-4993-bfeb-53cbbbba6f08",
+        "name": "John Doe",
+        "avatarUrl": "http://example.com",
+        "email": "user3@example.com",
+        "isAdmin": true,
+        "isSuspended": true,
+        "lastActiveAt": "2019-08-24T14:15:22Z",
+        "createdAt": "2019-08-24T14:15:22Z"
+    }
+],
+"groupMemberships":
+[
+{
+    "id": "string",
+    "groupId": "eb54e96e-21b8-4f54-9cd4-80fccbd06f55",
+    "userId": "2c4a230c-5085-4924-a3e1-25fb4fc5965b",
+    "user":
+            {
+                "id": "497f6eca-6276-4993-bfeb-53cbbbba6f08",
+                "name": "Jane Doe",
+                "avatarUrl": "http://example.com",
+                "email": "user@example.com",
+                "isAdmin": true,
+                "isSuspended": true,
+                "lastActiveAt": "2019-08-24T14:15:22Z",
+                "createdAt": "2019-08-24T14:15:22Z"
+            }
+        }
+    ]
+},
+"pagination":
+    {
+        "offset": 25,
+        "limit": 25
+    }
+}
+    """,
+    )
+
+
+def group_memberships_third():
+    return json_response(
+        200,
+        """{
+    "data":
+{
+    "users":
+[
+],
+"groupMemberships":
+[]
+},
+"pagination":
+    {
+        "offset": 50,
+        "limit": 25
+    }
+}
+    """,
+    )

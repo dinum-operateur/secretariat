@@ -28,7 +28,7 @@ class User(AbstractUser):
                 self.save()
 
         for group in self.organisations:
-            if group.outline_uuid:
+            if group.outline_group_uuid:
                 client.add_to_outline_group(self.outline_uuid, group.outline_group_uuid)
 
 
@@ -42,6 +42,49 @@ class Organisation(models.Model):
     @property
     def members(self):
         return User.objects.filter(membership__organisation=self)
+
+    def synchronize_to_outline(self):
+        from secretariat.utils.outline import Client as OutlineClient
+        from secretariat.utils.outline import GroupCreationFailed
+
+        client = OutlineClient()
+
+        if not self.outline_group_uuid:
+            try:
+                self.outline_group_uuid = client.create_new_group(self.name)
+                self.save()
+            except GroupCreationFailed:
+                outline_user = client.find_group_by_name(self.name)
+                self.outline_group_uuid = outline_user["id"]
+                self.save()
+
+        # create users on outline when needed
+        for new_member in self.members.filter(outline_uuid__isnull=True):
+            new_member.synchronize_to_outline()
+
+        # find users which already are in the group on outline side:
+        # no need to add them again
+        user_uuids_in_outline_group = set(
+            user.get("id") for user in client.list_group_users(self.outline_group_uuid)
+        )
+
+        # add outline users to outline group when possible and needed
+        for new_member in self.members.filter(outline_uuid__isnull=False).exclude(
+            outline_uuid__in=user_uuids_in_outline_group
+        ):
+            client.add_to_outline_group(
+                new_member.outline_uuid, self.outline_group_uuid
+            )
+
+        # remove users from outline group which are not in django group
+        user_uuids_in_django_group = set(
+            str(value[0]) for value in self.members.values_list("outline_uuid")
+        )
+        user_uuids_to_remove_from_outline_group = (
+            user_uuids_in_outline_group - user_uuids_in_django_group
+        )
+        for uuid in user_uuids_to_remove_from_outline_group:
+            client.remove_from_outline_group(uuid, self.outline_group_uuid)
 
 
 class Membership(models.Model):
