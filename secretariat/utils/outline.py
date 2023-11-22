@@ -127,9 +127,9 @@ class Client:
             raise RemoteServerError(response.status_code)
 
         if response.status_code == 400:
-            response = response.json()
+            data = response.json()
             raise GroupCreationFailed(
-                400, f"{response.get('error')} - {response.get('message')}"
+                400, f"{data.get('error')} - {data.get('message')}"
             )
 
         group_uuid = response.json()["data"]["id"]
