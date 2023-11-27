@@ -3,6 +3,7 @@ from django.core.management.base import BaseCommand, CommandError
 from django.db.utils import IntegrityError
 
 from config.settings import OUTLINE_URL
+from secretariat.models import Organisation
 from secretariat.utils.outline import Client as OutlineClient
 from secretariat.utils.outline import RemoteServerError
 
@@ -81,6 +82,7 @@ class Command(BaseCommand):
                 else:
                     try:
                         self.create_new_django_user(user)
+                        count_new_users += 1
                     except IntegrityError:
                         count_errors += 1
 
@@ -100,13 +102,55 @@ class Command(BaseCommand):
                     groups_page = client.list_groups(offset=offset, limit=limit)
                     outline_groups += groups_page
                     offset += 25
-
             except RemoteServerError:
                 self.stdout.write(self.style.ERROR("Cannot reach remote server."))
                 exit()
 
             print(f"Found {len(outline_groups)} groups.")
-            # WIP
+
+            known_orgas = set(
+                value[0] for value in Organisation.objects.values_list("name")
+            )
+            count_existing_groups, count_new_groups, count_errors = 0, 0, 0
+
+            for group in outline_groups:
+                if group["name"] in known_orgas:
+                    django_orga = Organisation.objects.get(name=group["name"])
+
+                    prompt_already_existing = (
+                        f'Group "{group["name"]}" already on secretariat app'
+                    )
+                    if str(django_orga.outline_group_uuid) == group["id"]:
+                        count_existing_groups += 1
+                    elif django_orga.outline_group_uuid is None:
+                        self.stdout.write(
+                            self.style.WARNING(
+                                f"{prompt_already_existing}, with no UUID. Copying UUID from outline."
+                            )
+                        )
+                        django_orga.outline_group_uuid = group["id"]
+                        django_orga.save()
+                    else:
+                        self.stdout.write(
+                            self.style.ERROR(
+                                f"{prompt_already_existing}. Les UUID ne correspondent pas (django: '{django_orga.outline_group_uuid}', outline: '{group['id']}')."
+                            )
+                        )
+                        count_errors += 1
+                else:
+                    try:
+                        self.create_new_django_orga(group)
+                        count_new_groups += 1
+                    except IntegrityError:
+                        count_errors += 1
+
+                # now, memberships !
+                # for orga in Organisation.objects.filter(outline_group_uuid__isnull=False):
+                #     print(orga)
+
+            self.stdout.write(f"\nMatched {count_existing_groups} existing groups.")
+            self.stdout.write(f"Created {count_new_groups} new Django orga.")
+            self.stdout.write(self.style.ERROR(f"{count_errors} errors."))
 
     def create_new_django_user(self, outline_user):
         django_user = User(
@@ -126,4 +170,21 @@ class Command(BaseCommand):
             )
             raise error
 
-        self.stdout.write(f'Creating user {outline_user["name"]}')
+        self.stdout.write(f'Creating user {django_user["name"]}')
+
+    def create_new_django_orga(self, outline_group):
+        django_orga = Organisation(
+            name=outline_group["name"],
+            outline_group_uuid=outline_group["id"],
+        )
+        try:
+            django_orga.save()
+        except IntegrityError as error:
+            self.stdout.write(
+                self.style.ERROR(
+                    f"Impossible d'ajouter '{outline_group.name}' car ce groupe existe déjà dans Django. Veuillez choisir un nom de groupe différent ou supprimer le doublon avant de réessayer."
+                )
+            )
+            raise error
+
+        self.stdout.write(f"Création du groupe {django_orga.name}.")
