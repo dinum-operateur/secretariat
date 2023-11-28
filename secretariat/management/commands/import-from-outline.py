@@ -3,7 +3,7 @@ from django.core.management.base import BaseCommand, CommandError
 from django.db.utils import IntegrityError
 
 from config.settings import OUTLINE_URL
-from secretariat.models import Organisation
+from secretariat.models import Membership, Organisation
 from secretariat.utils.outline import Client as OutlineClient
 from secretariat.utils.outline import RemoteServerError
 
@@ -38,19 +38,7 @@ class Command(BaseCommand):
         if importing_users:
             self.stdout.write("Importing users ... ")
 
-            try:
-                offset = 0
-                limit = 25
-                outline_users = []
-                users_page = None
-                while users_page != []:
-                    users_page = client.list_users(offset=offset, limit=limit)
-                    outline_users += users_page
-                    offset += 25
-
-            except RemoteServerError:
-                self.stdout.write(self.style.ERROR("Cannot reach remote server."))
-                exit()
+            outline_users = self.get_all_outline_users(client)
 
             known_emails = set(value[0] for value in User.objects.values_list("email"))
             count_existing_users, count_new_users, count_errors = 0, 0, 0
@@ -93,19 +81,7 @@ class Command(BaseCommand):
         if importing_groups:
             self.stdout.write("Importing groups ...")
 
-            try:
-                offset = 0
-                limit = 25
-                outline_groups = []
-                groups_page = None
-                while groups_page != []:
-                    groups_page = client.list_groups(offset=offset, limit=limit)
-                    outline_groups += groups_page
-                    offset += 25
-            except RemoteServerError:
-                self.stdout.write(self.style.ERROR("Cannot reach remote server."))
-                exit()
-
+            outline_groups = self.get_all_outline_groups(client)
             print(f"Found {len(outline_groups)} groups.")
 
             known_orgas = set(
@@ -139,18 +115,71 @@ class Command(BaseCommand):
                         count_errors += 1
                 else:
                     try:
-                        self.create_new_django_orga(group)
+                        django_orga = self.create_new_django_orga(group)
                         count_new_groups += 1
                     except IntegrityError:
                         count_errors += 1
 
                 # now, memberships !
-                # for orga in Organisation.objects.filter(outline_group_uuid__isnull=False):
-                #     print(orga)
+                outline_group_members = client.list_group_users(group["id"])
+                # print(len(outline_group_members), " members found.")
+                for member in outline_group_members:
+                    django_user = User.objects.get(outline_uuid=member["id"])
+                    print(member["id"], " = ", django_user)
+
+                    membership = Membership.objects.filter(
+                        user=django_user,
+                        organisation=django_orga,
+                        role="admin" if member["isAdmin"] else "member",
+                    )
+
+                    if not membership.exists():
+                        try:
+                            membership = Membership(
+                                user=django_user,
+                                organisation=django_orga,
+                                role="admin" if member["isAdmin"] else "member",
+                            )
+                            membership.save()
+                        except Exception as exception:
+                            print(exception)
 
             self.stdout.write(f"\nMatched {count_existing_groups} existing groups.")
             self.stdout.write(f"Created {count_new_groups} new Django orga.")
             self.stdout.write(self.style.ERROR(f"{count_errors} errors."))
+
+    def get_all_outline_users(self, client):
+        try:
+            offset = 0
+            limit = 25
+            outline_users = []
+            users_page = None
+            while users_page != []:
+                users_page = client.list_users(offset=offset, limit=limit)
+                outline_users += users_page
+                offset += 25
+
+        except RemoteServerError:
+            self.stdout.write(self.style.ERROR("Cannot reach remote server."))
+            exit()
+
+        return outline_users
+
+    def get_all_outline_groups(self, client):
+        try:
+            offset = 0
+            limit = 25
+            outline_groups = []
+            groups_page = None
+            while groups_page != []:
+                groups_page = client.list_groups(offset=offset, limit=limit)
+                outline_groups += groups_page
+                offset += 25
+        except RemoteServerError:
+            self.stdout.write(self.style.ERROR("Cannot reach remote server."))
+            exit()
+
+        return outline_groups
 
     def create_new_django_user(self, outline_user):
         django_user = User(
