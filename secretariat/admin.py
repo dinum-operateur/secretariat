@@ -89,3 +89,11 @@ def sync_organisations_with_outline(_, request, queryset):
 class OrganisationAdmin(admin.ModelAdmin):
     inlines = [MembershipInlineForOrganisation]
     actions = (sync_organisations_with_outline,)
+    list_display = (
+        "name",
+        "is_outline_synchronized",
+    )
+
+    @admin.display(description="Synchro Outline", boolean=True)
+    def is_outline_synchronized(self, obj):
+        return obj.outline_group_uuid is not None
