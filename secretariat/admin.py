@@ -85,10 +85,28 @@ def sync_organisations_with_outline(_, request, queryset):
             )
 
 
+class OrganisationSynchronizedWithOutlineFilter(admin.SimpleListFilter):
+    title = "Synchronisé avec Outline"
+    parameter_name = "outline_sync"
+
+    def lookups(self, request, model_admin):
+        return (
+            ("oui", "Oui"),
+            ("non", "Non"),
+        )
+
+    def queryset(self, request, queryset):
+        if self.value() == "oui":
+            return queryset.filter(outline_group_uuid__isnull=False)
+        if self.value() == "non":
+            return queryset.filter(outline_group_uuid__isnull=True)
+
+
 @admin.register(Organisation)
 class OrganisationAdmin(admin.ModelAdmin):
     inlines = [MembershipInlineForOrganisation]
     actions = (sync_organisations_with_outline,)
+    list_filter = (OrganisationSynchronizedWithOutlineFilter,)
     list_display = (
         "name",
         "is_outline_synchronized",
