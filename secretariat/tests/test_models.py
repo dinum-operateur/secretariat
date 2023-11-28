@@ -1,5 +1,7 @@
+from datetime import date, timedelta
 from unittest.mock import patch
 
+from django.core.exceptions import ValidationError
 from django.test import TestCase
 
 from secretariat.models import Organisation, User
@@ -53,3 +55,46 @@ class TestMembership(TestCase):
                 test_uuid,
                 "organisation.outline_group_uuid should be the one returned by Outline after first sync",
             )
+
+    def test_membership_cannot_end_before_beginning(self):
+        wrong_end_date = date.today() - timedelta(days=100)
+        membership = MembershipFactory(start_date=date.today(), end_date=wrong_end_date)
+        self.assertFalse(membership.start_date <= membership.end_date)
+        with self.assertRaises(ValidationError):
+            membership.full_clean()
+            membership.save()
+
+    def test_membership_cannot_end_same_day_as_beginning(self):
+        membership = MembershipFactory(start_date=date.today(), end_date=date.today())
+        self.assertEqual(membership.start_date, membership.end_date)
+        with self.assertRaises(ValidationError):
+            membership.full_clean()
+            membership.save()
+
+    def test_membership_start_date_can_be_null(self):
+        membership = MembershipFactory(end_date=date.today())
+        self.assertTrue(membership.start_date is None)
+
+        membership.full_clean()
+        membership.save()
+        self.assertTrue(membership.end_date == date.today())
+        self.assertTrue(membership.start_date is None)
+
+    def test_membership_end_date_can_be_null(self):
+        membership = MembershipFactory(start_date=date.today())
+        self.assertTrue(membership.end_date is None)
+
+        membership.full_clean()
+        membership.save()
+        self.assertTrue(membership.start_date == date.today())
+        self.assertTrue(membership.end_date is None)
+
+    def test_membership_dates_can_be_null(self):
+        membership = MembershipFactory()
+        self.assertTrue(membership.start_date is None)
+        self.assertTrue(membership.end_date is None)
+
+        membership.full_clean()
+        membership.save()
+        self.assertTrue(membership.start_date is None)
+        self.assertTrue(membership.end_date is None)
