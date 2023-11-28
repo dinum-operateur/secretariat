@@ -24,6 +24,10 @@ class OrganisationFactory(DjangoModelFactory):
     name = Faker("company", locale="fr_FR")
 
 
+class OrganisationSynchronizedWithOutlineFactory(OrganisationFactory):
+    outline_group_uuid = Faker("uuid4")
+
+
 class MembershipFactory(DjangoModelFactory):
     class Meta:
         model = models.Membership
