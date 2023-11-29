@@ -9,7 +9,7 @@ class User(AbstractUser):
         verbose_name = "estimé·e collègue"
         verbose_name_plural = "estimé·e·s collègues"
 
-    outline_uuid = models.UUIDField(null=True, blank=True, default=None)
+    outline_uuid = models.UUIDField(null=True, blank=True, default=None, unique=True)
 
     def __str__(self):
         return f"{self.first_name} {self.last_name}"
@@ -40,7 +40,9 @@ class User(AbstractUser):
 
 class Organisation(models.Model):
     name = models.CharField(max_length=50)
-    outline_group_uuid = models.UUIDField(null=True, blank=True, default=None)
+    outline_group_uuid = models.UUIDField(
+        null=True, blank=True, default=None, unique=True
+    )
 
     def __str__(self):
         return self.name
