@@ -78,45 +78,58 @@ class Command(BaseCommand):
 
         if importing_groups:
             self.stdout.write("Importing groups ...")
-            known_orgas = set(
+            known_group_names = set(
                 value[0] for value in Organisation.objects.values_list("name")
             )
-            count_existing_groups, count_new_groups, count_errors = 0, 0, 0
+            known_group_uuids = set(
+                value[0]
+                for value in Organisation.objects.values_list("outline_group_uuid")
+            )
+            count_existing_orgas, count_new_groups, count_errors = 0, 0, 0
 
-            for group in self.get_all_outline_groups(client):
-                if group["name"] in known_orgas:
-                    django_orga = Organisation.objects.get(name=group["name"])
+            for outline_group in self.get_all_outline_groups(client):
+                if outline_group["id"] in known_group_uuids:
+                    count_existing_orgas += 1
+                    django_orga = Organisation.objects.get(
+                        outline_group_uuid=outline_group["id"]
+                    )
 
                     prompt_already_existing = (
-                        f'Group "{group["name"]}" already on secretariat app'
+                        f'Group "{outline_group["name"]}" already on secretariat app'
                     )
-                    if str(django_orga.outline_group_uuid) == group["id"]:
-                        count_existing_groups += 1
-                    elif django_orga.outline_group_uuid is None:
-                        self.stdout.write(
-                            self.style.WARNING(
-                                f"{prompt_already_existing}, with no UUID. Copying UUID from outline."
+
+                    if django_orga.name != outline_group["name"]:
+                        django_orga.name = outline_group["name"]
+
+                elif outline_group["name"] in known_group_names:
+                    count_existing_orgas += 1
+                    django_orga = Organisation.objects.get(name=outline_group["name"])
+                    if str(django_orga.outline_group_uuid) != outline_group["id"]:
+                        if django_orga.outline_group_uuid is None:
+                            self.stdout.write(
+                                self.style.WARNING(
+                                    f"{prompt_already_existing}, with no UUID. Copying UUID from outline."
+                                )
                             )
-                        )
-                        django_orga.outline_group_uuid = group["id"]
-                        django_orga.save()
-                    else:
-                        self.stdout.write(
-                            self.style.ERROR(
-                                f"{prompt_already_existing}. Les UUID ne correspondent pas (django: '{django_orga.outline_group_uuid}', outline: '{group['id']}')."
+                            django_orga.outline_group_uuid = outline_group["id"]
+                            django_orga.save()
+                        else:
+                            self.stdout.write(
+                                self.style.ERROR(
+                                    f"{prompt_already_existing}. Les UUID ne correspondent pas (django: '{django_orga.outline_group_uuid}', outline: '{outline_group['id']}')."
+                                )
                             )
-                        )
-                        count_errors += 1
+                            count_errors += 1
                 else:
                     try:
-                        django_orga = self.create_new_django_orga(group)
+                        django_orga = self.create_new_django_orga(outline_group)
                         count_new_groups += 1
                     except IntegrityError:
                         count_errors += 1
 
                 # then lists group members on outline
                 # and creates memberships for all of them
-                outline_group_members = client.list_group_users(group["id"])
+                outline_group_members = client.list_group_users(outline_group["id"])
                 for member in outline_group_members:
                     django_user = User.objects.get(outline_uuid=member["id"])
 
@@ -126,10 +139,12 @@ class Command(BaseCommand):
                             organisation=django_orga,
                             role="admin" if member["isAdmin"] else "member",
                         )
+                        if isCreated:
+                            count_new_groups += 1
                     except Exception as exception:
                         print(exception)
 
-            self.stdout.write(f"\nMatched {count_existing_groups} existing groups.")
+            self.stdout.write(f"\nMatched {count_existing_orgas} existing groups.")
             self.stdout.write(f"Created {count_new_groups} new Django orga.")
             self.stdout.write(self.style.ERROR(f"{count_errors} errors."))
 
@@ -137,13 +152,11 @@ class Command(BaseCommand):
         try:
             offset = 0
             limit = 25
-            outline_users = []
             users_page = None
             while users_page != []:
                 users_page = client.list_users(offset=offset, limit=limit)
-                outline_users += users_page
-                offset += 25
                 yield from users_page
+                offset += limit
 
         except RemoteServerError:
             self.stdout.write(self.style.ERROR("Cannot reach remote server."))
@@ -153,13 +166,12 @@ class Command(BaseCommand):
         try:
             offset = 0
             limit = 25
-            outline_groups = []
             groups_page = None
             while groups_page != []:
                 groups_page = client.list_groups(offset=offset, limit=limit)
-                outline_groups += groups_page
-                offset += 25
                 yield from groups_page
+                offset += limit
+
         except RemoteServerError:
             self.stdout.write(self.style.ERROR("Cannot reach remote server."))
             exit()
