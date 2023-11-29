@@ -38,12 +38,10 @@ class Command(BaseCommand):
         if importing_users:
             self.stdout.write("Importing users ... ")
 
-            outline_users = self.get_all_outline_users(client)
-
             known_emails = set(value[0] for value in User.objects.values_list("email"))
             count_existing_users, count_new_users, count_errors = 0, 0, 0
 
-            for user in outline_users:
+            for user in self.get_all_outline_users(client):
                 if user["email"] in known_emails:
                     django_user = User.objects.get(email=user["email"])
 
@@ -80,16 +78,12 @@ class Command(BaseCommand):
 
         if importing_groups:
             self.stdout.write("Importing groups ...")
-
-            outline_groups = self.get_all_outline_groups(client)
-            print(f"Found {len(outline_groups)} groups.")
-
             known_orgas = set(
                 value[0] for value in Organisation.objects.values_list("name")
             )
             count_existing_groups, count_new_groups, count_errors = 0, 0, 0
 
-            for group in outline_groups:
+            for group in self.get_all_outline_groups(client):
                 if group["name"] in known_orgas:
                     django_orga = Organisation.objects.get(name=group["name"])
 
@@ -120,29 +114,20 @@ class Command(BaseCommand):
                     except IntegrityError:
                         count_errors += 1
 
-                # now, memberships !
+                # then lists group members on outline
+                # and creates memberships for all of them
                 outline_group_members = client.list_group_users(group["id"])
-                # print(len(outline_group_members), " members found.")
                 for member in outline_group_members:
                     django_user = User.objects.get(outline_uuid=member["id"])
-                    print(member["id"], " = ", django_user)
 
-                    membership = Membership.objects.filter(
-                        user=django_user,
-                        organisation=django_orga,
-                        role="admin" if member["isAdmin"] else "member",
-                    )
-
-                    if not membership.exists():
-                        try:
-                            membership = Membership(
-                                user=django_user,
-                                organisation=django_orga,
-                                role="admin" if member["isAdmin"] else "member",
-                            )
-                            membership.save()
-                        except Exception as exception:
-                            print(exception)
+                    try:
+                        membership, isCreated = Membership.objects.get_or_create(
+                            user=django_user,
+                            organisation=django_orga,
+                            role="admin" if member["isAdmin"] else "member",
+                        )
+                    except Exception as exception:
+                        print(exception)
 
             self.stdout.write(f"\nMatched {count_existing_groups} existing groups.")
             self.stdout.write(f"Created {count_new_groups} new Django orga.")
@@ -158,12 +143,11 @@ class Command(BaseCommand):
                 users_page = client.list_users(offset=offset, limit=limit)
                 outline_users += users_page
                 offset += 25
+                yield from users_page
 
         except RemoteServerError:
             self.stdout.write(self.style.ERROR("Cannot reach remote server."))
             exit()
-
-        return outline_users
 
     def get_all_outline_groups(self, client):
         try:
@@ -175,11 +159,10 @@ class Command(BaseCommand):
                 groups_page = client.list_groups(offset=offset, limit=limit)
                 outline_groups += groups_page
                 offset += 25
+                yield from groups_page
         except RemoteServerError:
             self.stdout.write(self.style.ERROR("Cannot reach remote server."))
             exit()
-
-        return outline_groups
 
     def create_new_django_user(self, outline_user):
         django_user = User(
