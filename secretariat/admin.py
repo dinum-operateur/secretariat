@@ -123,4 +123,8 @@ class OrganisationAdmin(admin.ModelAdmin):
 
 @admin.register(Membership)
 class MembershipAdmin(admin.ModelAdmin):
-    pass
+    list_display = (
+        "user",
+        "organisation",
+        "role",
+    )
