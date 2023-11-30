@@ -17,6 +17,10 @@ class UserFactory(DjangoModelFactory):
     password = Faker("password")
 
 
+class UserSynchronizedWithOutlineFactory(UserFactory):
+    outline_uuid = Faker("uuid4")
+
+
 class OrganisationFactory(DjangoModelFactory):
     class Meta:
         model = models.Organisation
