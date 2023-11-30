@@ -132,12 +132,15 @@ class Command(BaseCommand):
                 # we then prepare a set listing every member of the group in Django. We'll remove outline members.
                 # The remaining list should be empty. If not, users might have been removed directly in outline of here
                 # django users were not properly synced to outline
-                django_users_unaccounted_for = django_orga.members
+                django_users_unaccounted_for = set(
+                    value[0]
+                    for value in django_orga.members.values_list("outline_uuid")
+                )
 
                 # and creates memberships for all of them
                 outline_group_members = client.list_group_users(outline_group["id"])
+                count_added_members = 0
                 for member in outline_group_members:
-                    count_added_members = 0
                     django_user = User.objects.get(outline_uuid=member["id"])
 
                     try:
@@ -148,21 +151,23 @@ class Command(BaseCommand):
                         )
                         if is_created:
                             count_added_members += 1
-                        django_users_unaccounted_for.remove(django_user)
-
+                        else:
+                            django_users_unaccounted_for.remove(
+                                django_user.outline_uuid
+                            )
                     except Exception as exception:
                         print(exception)
 
-                    if count_added_members != 0:
-                        print(
-                            f"{count_added_members} ajouté.es au groupe {django_orga.name}"
-                        )
+                if count_added_members != 0:
+                    print(
+                        f"{count_added_members} membres ajouté.es au groupe {django_orga.name}"
+                    )
 
                 # Every member should be accounted for. Warn user otherwise
                 if len(django_users_unaccounted_for) != 0:
                     for extra_django_member in django_users_unaccounted_for:
                         print(
-                            f"{extra_django_member} appartenait à l'organisation {django_orga} mais pas au groupe Outline correspondant."
+                            f"{extra_django_member.username} appartenait à l'organisation {django_orga} mais pas au groupe Outline correspondant."
                         )
                     print("Veuillez synchroniser vos groupes vers outline.")
 
@@ -215,8 +220,6 @@ class Command(BaseCommand):
                 )
             )
             raise error
-
-        self.stdout.write(f'Creating user {django_user["name"]}')
 
     def create_new_django_orga(self, outline_group):
         django_orga = Organisation(
