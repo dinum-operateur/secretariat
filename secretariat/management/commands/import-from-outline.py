@@ -1,5 +1,5 @@
 from django.contrib.auth import get_user_model
-from django.core.management.base import BaseCommand, CommandError
+from django.core.management.base import BaseCommand
 from django.db.utils import IntegrityError
 
 from config.settings import OUTLINE_URL
@@ -13,167 +13,145 @@ User = get_user_model()
 class Command(BaseCommand):
     help = "Imports users from Outline. Creates missing users in Django, updates existing users if needed."
 
-    def add_arguments(self, parser):
-        parser.add_argument(
-            "--users-only", action="store_true", help="import users only"
-        )
-        parser.add_argument(
-            "--groups-only", action="store_true", help="import groups only"
-        )
-
     def handle(self, *args, **options):
-        if options["users_only"] and options["groups_only"]:
-            raise CommandError(
-                "options --users-only and --groups-only cannot be used at the same time. For both users and groups, use neither."
-            )
-
         print(f"Instance URL is {OUTLINE_URL} .")
         # check instance is up ?
 
         client = OutlineClient()
 
-        importing_users = True if not options["groups_only"] else False
-        importing_groups = True if not options["users_only"] else False
+        self.stdout.write("Importing users ... ")
 
-        if importing_users:
-            self.stdout.write("Importing users ... ")
+        known_emails = set(value[0] for value in User.objects.values_list("email"))
+        count_existing_users, count_new_users, count_errors = 0, 0, 0
 
-            known_emails = set(value[0] for value in User.objects.values_list("email"))
-            count_existing_users, count_new_users, count_errors = 0, 0, 0
+        for user in self.get_all_outline_users(client):
+            if user["email"] in known_emails:
+                django_user = User.objects.get(email=user["email"])
 
-            for user in self.get_all_outline_users(client):
-                if user["email"] in known_emails:
-                    django_user = User.objects.get(email=user["email"])
-
-                    prompt_already_existing = (
-                        f'Email {user["email"]} already on secretariat app'
+                prompt_already_existing = (
+                    f'Email {user["email"]} already on secretariat app'
+                )
+                if str(django_user.outline_uuid) == user["id"]:
+                    count_existing_users += 1
+                elif django_user.outline_uuid is None:
+                    self.stdout.write(
+                        self.style.WARNING(
+                            f"{prompt_already_existing}, with no UUID. Copying UUID from outline."
+                        )
                     )
-                    if str(django_user.outline_uuid) == user["id"]:
-                        count_existing_users += 1
-                    elif django_user.outline_uuid is None:
+                    django_user.outline_uuid = user["id"]
+                    django_user.save()
+                else:
+                    self.stdout.write(
+                        self.style.ERROR(
+                            f"{prompt_already_existing}. Unexpected UUID (django: '{django_user.outline_uuid}', outline: '{user['id']}')."
+                        )
+                    )
+                    count_errors += 1
+            else:
+                try:
+                    self.create_new_django_user(user)
+                    count_new_users += 1
+                except IntegrityError:
+                    count_errors += 1
+
+        self.stdout.write(f"\nMatched {count_existing_users} existing users.")
+        self.stdout.write(f"Created {count_new_users} new Django users.")
+        self.stdout.write(self.style.ERROR(f"{count_errors} errors."))
+
+        self.stdout.write("Importing groups ...")
+        known_group_names = set(
+            value[0] for value in Organisation.objects.values_list("name")
+        )
+        known_group_uuids = set(
+            value[0] for value in Organisation.objects.values_list("outline_group_uuid")
+        )
+        count_existing_orgas, count_new_groups, count_errors = 0, 0, 0
+
+        for outline_group in self.get_all_outline_groups(client):
+            if outline_group["id"] in known_group_uuids:
+                count_existing_orgas += 1
+                django_orga = Organisation.objects.get(
+                    outline_group_uuid=outline_group["id"]
+                )
+
+                prompt_already_existing = (
+                    f'Group "{outline_group["name"]}" already on secretariat app'
+                )
+
+                if django_orga.name != outline_group["name"]:
+                    django_orga.name = outline_group["name"]
+
+            elif outline_group["name"] in known_group_names:
+                count_existing_orgas += 1
+                django_orga = Organisation.objects.get(name=outline_group["name"])
+                if str(django_orga.outline_group_uuid) != outline_group["id"]:
+                    if django_orga.outline_group_uuid is None:
                         self.stdout.write(
                             self.style.WARNING(
                                 f"{prompt_already_existing}, with no UUID. Copying UUID from outline."
                             )
                         )
-                        django_user.outline_uuid = user["id"]
-                        django_user.save()
+                        django_orga.outline_group_uuid = outline_group["id"]
+                        django_orga.save()
                     else:
                         self.stdout.write(
                             self.style.ERROR(
-                                f"{prompt_already_existing}. Unexpected UUID (django: '{django_user.outline_uuid}', outline: '{user['id']}')."
+                                f"{prompt_already_existing}. Les UUID ne correspondent pas (django: '{django_orga.outline_group_uuid}', outline: '{outline_group['id']}')."
                             )
                         )
                         count_errors += 1
-                else:
-                    try:
-                        self.create_new_django_user(user)
-                        count_new_users += 1
-                    except IntegrityError:
-                        count_errors += 1
+            else:
+                try:
+                    django_orga = self.create_new_django_orga(outline_group)
+                    count_new_groups += 1
+                except IntegrityError:
+                    count_errors += 1
 
-            self.stdout.write(f"\nMatched {count_existing_users} existing users.")
-            self.stdout.write(f"Created {count_new_users} new Django users.")
-            self.stdout.write(self.style.ERROR(f"{count_errors} errors."))
+            # then lists group members on django and outline
 
-        if importing_groups:
-            self.stdout.write("Importing groups ...")
-            known_group_names = set(
-                value[0] for value in Organisation.objects.values_list("name")
+            # we then prepare a set listing every member of the group in Django. We'll remove outline members.
+            # The remaining list should be empty. If not, users might have been removed directly in outline of here
+            # django users were not properly synced to outline
+            django_users_unaccounted_for = set(
+                value[0] for value in django_orga.members.values_list("outline_uuid")
             )
-            known_group_uuids = set(
-                value[0]
-                for value in Organisation.objects.values_list("outline_group_uuid")
-            )
-            count_existing_orgas, count_new_groups, count_errors = 0, 0, 0
 
-            for outline_group in self.get_all_outline_groups(client):
-                if outline_group["id"] in known_group_uuids:
-                    count_existing_orgas += 1
-                    django_orga = Organisation.objects.get(
-                        outline_group_uuid=outline_group["id"]
+            # and creates memberships for all of them
+            outline_group_members = client.list_group_users(outline_group["id"])
+            count_added_members = 0
+            for member in outline_group_members:
+                django_user = User.objects.get(outline_uuid=member["id"])
+
+                try:
+                    membership, is_created = Membership.objects.get_or_create(
+                        user=django_user,
+                        organisation=django_orga,
+                        role="admin" if member["isAdmin"] else "member",
                     )
+                    if is_created:
+                        count_added_members += 1
+                    else:
+                        django_users_unaccounted_for.remove(django_user.outline_uuid)
+                except Exception as exception:
+                    print(exception)
 
-                    prompt_already_existing = (
-                        f'Group "{outline_group["name"]}" already on secretariat app'
-                    )
-
-                    if django_orga.name != outline_group["name"]:
-                        django_orga.name = outline_group["name"]
-
-                elif outline_group["name"] in known_group_names:
-                    count_existing_orgas += 1
-                    django_orga = Organisation.objects.get(name=outline_group["name"])
-                    if str(django_orga.outline_group_uuid) != outline_group["id"]:
-                        if django_orga.outline_group_uuid is None:
-                            self.stdout.write(
-                                self.style.WARNING(
-                                    f"{prompt_already_existing}, with no UUID. Copying UUID from outline."
-                                )
-                            )
-                            django_orga.outline_group_uuid = outline_group["id"]
-                            django_orga.save()
-                        else:
-                            self.stdout.write(
-                                self.style.ERROR(
-                                    f"{prompt_already_existing}. Les UUID ne correspondent pas (django: '{django_orga.outline_group_uuid}', outline: '{outline_group['id']}')."
-                                )
-                            )
-                            count_errors += 1
-                else:
-                    try:
-                        django_orga = self.create_new_django_orga(outline_group)
-                        count_new_groups += 1
-                    except IntegrityError:
-                        count_errors += 1
-
-                # then lists group members on django and outline
-
-                # we then prepare a set listing every member of the group in Django. We'll remove outline members.
-                # The remaining list should be empty. If not, users might have been removed directly in outline of here
-                # django users were not properly synced to outline
-                django_users_unaccounted_for = set(
-                    value[0]
-                    for value in django_orga.members.values_list("outline_uuid")
+            if count_added_members != 0:
+                print(
+                    f"{count_added_members} membres ajouté.es au groupe {django_orga.name}."
                 )
 
-                # and creates memberships for all of them
-                outline_group_members = client.list_group_users(outline_group["id"])
-                count_added_members = 0
-                for member in outline_group_members:
-                    django_user = User.objects.get(outline_uuid=member["id"])
-
-                    try:
-                        membership, is_created = Membership.objects.get_or_create(
-                            user=django_user,
-                            organisation=django_orga,
-                            role="admin" if member["isAdmin"] else "member",
-                        )
-                        if is_created:
-                            count_added_members += 1
-                        else:
-                            django_users_unaccounted_for.remove(
-                                django_user.outline_uuid
-                            )
-                    except Exception as exception:
-                        print(exception)
-
-                if count_added_members != 0:
+            # Every member should be accounted for. Warn user otherwise
+            if len(django_users_unaccounted_for) != 0:
+                for extra_django_member in django_users_unaccounted_for:
                     print(
-                        f"{count_added_members} membres ajouté.es au groupe {django_orga.name}"
+                        f"{extra_django_member.username} appartenait à l'organisation {django_orga} mais pas au groupe Outline correspondant."
                     )
+                print("Veuillez synchroniser vos groupes vers outline.")
 
-                # Every member should be accounted for. Warn user otherwise
-                if len(django_users_unaccounted_for) != 0:
-                    for extra_django_member in django_users_unaccounted_for:
-                        print(
-                            f"{extra_django_member.username} appartenait à l'organisation {django_orga} mais pas au groupe Outline correspondant."
-                        )
-                    print("Veuillez synchroniser vos groupes vers outline.")
-
-            self.stdout.write(f"\nMatched {count_existing_orgas} existing groups.")
-            self.stdout.write(f"Created {count_new_groups} new Django orga.")
-            self.stdout.write(self.style.ERROR(f"{count_errors} errors."))
+        self.stdout.write(f"\nMatched {count_existing_orgas} existing groups.")
+        self.stdout.write(f"Created {count_new_groups} new Django orga.")
+        self.stdout.write(self.style.ERROR(f"{count_errors} errors."))
 
     def get_all_outline_users(self, client):
         try:
