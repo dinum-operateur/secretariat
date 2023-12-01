@@ -14,6 +14,24 @@ class MembershipInlineForOrganisation(MembershipInline):
     verbose_name_plural = "Membres"
 
 
+class SynchronizedWithOutlineFilter(admin.SimpleListFilter):
+    title = "Synchronisé avec Outline"
+    parameter_name = "outline_sync"
+    field_name = "outline_uuid"
+
+    def lookups(self, request, model_admin):
+        return (
+            ("oui", "Oui"),
+            ("non", "Non"),
+        )
+
+    def queryset(self, request, queryset):
+        if self.value() == "oui":
+            return queryset.filter(**{f"{self.field_name}__isnull": False})
+        if self.value() == "non":
+            return queryset.filter(**{f"{self.field_name}__isnull": True})
+
+
 @admin.register(User)
 class UserAdmin(admin.ModelAdmin):
     list_display = (
@@ -25,6 +43,7 @@ class UserAdmin(admin.ModelAdmin):
         "is_staff",
         "is_outline_synchronized",
     )
+    list_filter = (SynchronizedWithOutlineFilter,)
     inlines = [MembershipInline]
     readonly_fields = ["outline_uuid"]
     fieldsets = (
@@ -85,7 +104,21 @@ def sync_organisations_with_outline(_, request, queryset):
             )
 
 
+class OrganisationSynchronizedWithOutlineFilter(SynchronizedWithOutlineFilter):
+    title = "Synchronisée avec Outline"
+    field_name = "outline_group_uuid"
+
+
 @admin.register(Organisation)
 class OrganisationAdmin(admin.ModelAdmin):
     inlines = [MembershipInlineForOrganisation]
     actions = (sync_organisations_with_outline,)
+    list_filter = (OrganisationSynchronizedWithOutlineFilter,)
+    list_display = (
+        "name",
+        "is_outline_synchronized",
+    )
+
+    @admin.display(description="Synchro Outline", boolean=True)
+    def is_outline_synchronized(self, obj):
+        return obj.outline_group_uuid is not None
