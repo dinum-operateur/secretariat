@@ -5,6 +5,10 @@ from django.db.models import CheckConstraint, F, Q
 
 
 class User(AbstractUser):
+    class Meta:
+        verbose_name = "estimé·e collègue"
+        verbose_name_plural = "estimé·e·s collègues"
+
     outline_uuid = models.UUIDField(null=True, blank=True, default=None)
 
     def __str__(self):
