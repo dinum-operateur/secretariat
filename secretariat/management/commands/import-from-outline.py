@@ -19,6 +19,24 @@ class Command(BaseCommand):
 
         client = OutlineClient()
 
+        self.import_users(client)
+        self.import_orga_and_memberships(client)
+
+    def get_all_outline_users(self, client):
+        try:
+            offset = 0
+            limit = 25
+            users_page = None
+            while users_page != []:
+                users_page = client.list_users(offset=offset, limit=limit)
+                yield from users_page
+                offset += limit
+
+        except RemoteServerError:
+            self.stdout.write(self.style.ERROR("Cannot reach remote server."))
+            exit()
+
+    def import_users(self, client):
         self.stdout.write("Importing users ... ")
 
         known_emails = set(value[0] for value in User.objects.values_list("email"))
@@ -57,8 +75,41 @@ class Command(BaseCommand):
 
         self.stdout.write(f"\nMatched {count_existing_users} existing users.")
         self.stdout.write(f"Created {count_new_users} new Django users.")
-        self.stdout.write(self.style.ERROR(f"{count_errors} errors."))
+        self.stdout.write(self.style.ERROR(f"{count_errors} errors.\n"))
 
+    def create_new_django_user(self, outline_user):
+        django_user = User(
+            username=outline_user["name"].replace(" ", "").lower(),
+            first_name=outline_user["name"].split(" ")[0],
+            last_name=" ".join(outline_user["name"].split(" ")[1:]),
+            email=outline_user["email"],
+            outline_uuid=outline_user["id"],
+        )
+        try:
+            django_user.save()
+        except IntegrityError as error:
+            self.stdout.write(
+                self.style.ERROR(
+                    f"Impossible d'ajouter '{django_user.username}' car cet username existe déjà dans Django. Veuillez choisir un username différent ou supprimer le doublon avant de réessayer."
+                )
+            )
+            raise error
+
+    def get_all_outline_groups(self, client):
+        try:
+            offset = 0
+            limit = 25
+            groups_page = None
+            while groups_page != []:
+                groups_page = client.list_groups(offset=offset, limit=limit)
+                yield from groups_page
+                offset += limit
+
+        except RemoteServerError:
+            self.stdout.write(self.style.ERROR("Cannot reach remote server."))
+            exit()
+
+    def import_orga_and_memberships(self, client):
         self.stdout.write("Importing groups ...")
         known_group_names = set(
             value[0] for value in Organisation.objects.values_list("name")
@@ -114,7 +165,7 @@ class Command(BaseCommand):
             # The remaining list should be empty. If not, users might have been removed directly in outline of here
             # django users were not properly synced to outline
             django_users_unaccounted_for = set(
-                value[0] for value in django_orga.members.values_list("outline_uuid")
+                value[0] for value in django_orga.members.values_list("username")
             )
 
             # and creates memberships for all of them
@@ -132,72 +183,26 @@ class Command(BaseCommand):
                     if is_created:
                         count_added_members += 1
                     else:
-                        django_users_unaccounted_for.remove(django_user.outline_uuid)
+                        django_users_unaccounted_for.remove(django_user.username)
                 except Exception as exception:
-                    print(exception)
+                    print("ah mais y a une exception là : ", exception)
 
             if count_added_members != 0:
                 print(
                     f"{count_added_members} membres ajouté.es au groupe {django_orga.name}."
                 )
 
-            # Every member should be accounted for. Warn user otherwise
-            if len(django_users_unaccounted_for) != 0:
-                for extra_django_member in django_users_unaccounted_for:
-                    print(
-                        f"{extra_django_member.username} appartenait à l'organisation {django_orga} mais pas au groupe Outline correspondant."
-                    )
-                print("Veuillez synchroniser vos groupes vers outline.")
+        # Every member should be accounted for. Warn user otherwise
+        users_with_unexpected_auth = set(django_users_unaccounted_for)
+        print(len(users_with_unexpected_auth), "souci(s) de permissions après import.")
+        if len(users_with_unexpected_auth) != 0:
+            print("Veuillez vérifier/synchroniser les groupes des membres suivants :")
+            for extra_django_member in users_with_unexpected_auth:
+                print("   - ", extra_django_member)
 
         self.stdout.write(f"\nMatched {count_existing_orgas} existing groups.")
         self.stdout.write(f"Created {count_new_groups} new Django orga.")
         self.stdout.write(self.style.ERROR(f"{count_errors} errors."))
-
-    def get_all_outline_users(self, client):
-        try:
-            offset = 0
-            limit = 25
-            users_page = None
-            while users_page != []:
-                users_page = client.list_users(offset=offset, limit=limit)
-                yield from users_page
-                offset += limit
-
-        except RemoteServerError:
-            self.stdout.write(self.style.ERROR("Cannot reach remote server."))
-            exit()
-
-    def get_all_outline_groups(self, client):
-        try:
-            offset = 0
-            limit = 25
-            groups_page = None
-            while groups_page != []:
-                groups_page = client.list_groups(offset=offset, limit=limit)
-                yield from groups_page
-                offset += limit
-
-        except RemoteServerError:
-            self.stdout.write(self.style.ERROR("Cannot reach remote server."))
-            exit()
-
-    def create_new_django_user(self, outline_user):
-        django_user = User(
-            username=outline_user["name"].replace(" ", "").lower(),
-            first_name=outline_user["name"].split(" ")[0],
-            last_name=" ".join(outline_user["name"].split(" ")[1:]),
-            email=outline_user["email"],
-            outline_uuid=outline_user["id"],
-        )
-        try:
-            django_user.save()
-        except IntegrityError as error:
-            self.stdout.write(
-                self.style.ERROR(
-                    f"Impossible d'ajouter '{django_user.username}' car cet username existe déjà dans Django. Veuillez choisir un username différent ou supprimer le doublon avant de réessayer."
-                )
-            )
-            raise error
 
     def create_new_django_orga(self, outline_group):
         django_orga = Organisation(
