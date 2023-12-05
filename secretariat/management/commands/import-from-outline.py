@@ -73,9 +73,11 @@ class Command(BaseCommand):
                 except IntegrityError:
                     count_errors += 1
 
-        self.stdout.write(f"\nMatched {count_existing_users} existing users.")
-        self.stdout.write(f"Created {count_new_users} new Django users.")
-        self.stdout.write(self.style.ERROR(f"{count_errors} errors.\n"))
+        self.stdout.write(
+            f"\n{count_existing_users} utilisateurices existant.es trouvé.es sur secretariat."
+        )
+        self.stdout.write(f"{count_new_users} nouveaux users.")
+        self.stdout.write(self.style.ERROR(f"{count_errors} erreurs.\n"))
 
     def create_new_django_user(self, outline_user):
         django_user = User(
@@ -106,11 +108,11 @@ class Command(BaseCommand):
                 offset += limit
 
         except RemoteServerError:
-            self.stdout.write(self.style.ERROR("Cannot reach remote server."))
+            self.stdout.write(self.style.ERROR("Impossible d'atteindre le serveur."))
             exit()
 
     def import_orga_and_memberships(self, client):
-        self.stdout.write("Importing groups ...")
+        self.stdout.write("Import des groupes ...")
         known_group_names = set(
             value[0] for value in Organisation.objects.values_list("name")
         )
@@ -126,9 +128,7 @@ class Command(BaseCommand):
                     outline_group_uuid=outline_group["id"]
                 )
 
-                prompt_already_existing = (
-                    f'Group "{outline_group["name"]}" already on secretariat app'
-                )
+                prompt_already_existing = f'L\'organisation "{outline_group["name"]}" existe déjà sur secretariat.'
 
                 if django_orga.name != outline_group["name"]:
                     django_orga.name = outline_group["name"]
@@ -136,11 +136,15 @@ class Command(BaseCommand):
             elif outline_group["name"] in known_group_names:
                 count_existing_orgas += 1
                 django_orga = Organisation.objects.get(name=outline_group["name"])
+
+                prompt_already_existing = (
+                    f'Group "{outline_group["name"]}" already on secretariat app'
+                )
                 if str(django_orga.outline_group_uuid) != outline_group["id"]:
                     if django_orga.outline_group_uuid is None:
                         self.stdout.write(
                             self.style.WARNING(
-                                f"{prompt_already_existing}, with no UUID. Copying UUID from outline."
+                                f"{prompt_already_existing}, sans UUID précisé. UUID copié depuis Outline."
                             )
                         )
                         django_orga.outline_group_uuid = outline_group["id"]
@@ -185,7 +189,7 @@ class Command(BaseCommand):
                     else:
                         django_users_unaccounted_for.remove(django_user.username)
                 except Exception as exception:
-                    print("ah mais y a une exception là : ", exception)
+                    print("Exception : ", exception)
 
             if count_added_members != 0:
                 print(
@@ -200,9 +204,11 @@ class Command(BaseCommand):
             for extra_django_member in users_with_unexpected_auth:
                 print("   - ", extra_django_member)
 
-        self.stdout.write(f"\nMatched {count_existing_orgas} existing groups.")
-        self.stdout.write(f"Created {count_new_groups} new Django orga.")
-        self.stdout.write(self.style.ERROR(f"{count_errors} errors."))
+        self.stdout.write(
+            f"\n{count_existing_orgas} organisations existantes déjà sur secretariat."
+        )
+        self.stdout.write(f"{count_new_groups} organisations crées.")
+        self.stdout.write(self.style.ERROR(f"{count_errors} erreurs."))
 
     def create_new_django_orga(self, outline_group):
         django_orga = Organisation(
