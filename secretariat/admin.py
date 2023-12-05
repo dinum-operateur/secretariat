@@ -100,15 +100,6 @@ class UserAdmin(admin.ModelAdmin):
             obj.set_password(form.data["password"])
             obj.save()
 
-        if obj.outline_uuid is None and "email" in form.changed_data:
-            try:
-                obj.synchronize_to_outline()
-                success_message = f"L'adresse email « {obj.email} » a été invitée sur Outline et ajoutée au(x) groupe(s) adéquat(s)."
-                messages.success(request, success_message)
-            except Exception:
-                error_message = f"L’invitation à Outline a échoué. Vérifiez que l'adresse email « {obj.email} » n'est pas déjà invitée sur Outline."
-                messages.warning(request, error_message)
-
 
 class OrganisationSynchronizedWithOutlineFilter(SynchronizedWithOutlineFilter):
     title = "Synchronisée avec Outline"
