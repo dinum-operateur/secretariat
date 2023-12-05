@@ -32,6 +32,27 @@ class SynchronizedWithOutlineFilter(admin.SimpleListFilter):
             return queryset.filter(**{f"{self.field_name}__isnull": True})
 
 
+@admin.action(description="Synchroniser vers Outline")
+def sync_objects_with_outline(model_admin: admin.ModelAdmin, request, queryset):
+    for object in queryset:
+        try:
+            object.synchronize_to_outline()
+            messages.success(
+                request,
+                f"Synchronisation correcte de l’{model_admin.opts.verbose_name} « {object}»",
+            )
+        except GroupCreationFailed:
+            messages.error(
+                request,
+                f"Impossible de créer le groupe Outline « {object.name}».",
+            )
+        except Exception:
+            messages.error(
+                request,
+                f"Une erreur s’est produite lors de la synchronisation de l’{model_admin.opts.verbose_name} « {object}»",
+            )
+
+
 @admin.register(User)
 class UserAdmin(admin.ModelAdmin):
     list_display = (
@@ -45,6 +66,7 @@ class UserAdmin(admin.ModelAdmin):
     )
     list_filter = (SynchronizedWithOutlineFilter,)
     inlines = [MembershipInline]
+    actions = (sync_objects_with_outline,)
     readonly_fields = ["outline_uuid"]
     fieldsets = (
         (
@@ -88,22 +110,6 @@ class UserAdmin(admin.ModelAdmin):
                 messages.warning(request, error_message)
 
 
-@admin.action(description="Synchroniser les organisations vers Outline")
-def sync_organisations_with_outline(_, request, queryset):
-    for organisation in queryset:
-        try:
-            organisation.synchronize_to_outline()
-            messages.success(
-                request,
-                f"Le groupe « {organisation.name}» a bien été synchronisé vers Outline.",
-            )
-        except GroupCreationFailed:
-            messages.error(
-                request,
-                f"Impossible de créer le groupe Outline « {organisation.name}».",
-            )
-
-
 class OrganisationSynchronizedWithOutlineFilter(SynchronizedWithOutlineFilter):
     title = "Synchronisée avec Outline"
     field_name = "outline_group_uuid"
@@ -112,7 +118,7 @@ class OrganisationSynchronizedWithOutlineFilter(SynchronizedWithOutlineFilter):
 @admin.register(Organisation)
 class OrganisationAdmin(admin.ModelAdmin):
     inlines = [MembershipInlineForOrganisation]
-    actions = (sync_organisations_with_outline,)
+    actions = (sync_objects_with_outline,)
     list_filter = (OrganisationSynchronizedWithOutlineFilter,)
     list_display = (
         "name",
