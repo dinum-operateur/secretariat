@@ -74,7 +74,7 @@ class Command(BaseCommand):
                     count_errors += 1
 
         self.stdout.write(
-            f"\n{count_existing_users} utilisateurices existant.es trouvé.es sur secretariat."
+            f"\n{count_existing_users} utilisateurices déjà à jour sur secretariat."
         )
         self.stdout.write(f"{count_new_users} nouveaux users.")
         self.stdout.write(self.style.ERROR(f"{count_errors} erreurs.\n"))
@@ -138,9 +138,7 @@ class Command(BaseCommand):
                 count_existing_orgas += 1
                 django_orga = Organisation.objects.get(name=outline_group["name"])
 
-                prompt_already_existing = (
-                    f'L’orga "{outline_group["name"]}" existe déjà dans l’app secrétariat'
-                )
+                prompt_already_existing = f'L’orga "{outline_group["name"]}" existe déjà dans l’app secrétariat'
                 if str(django_orga.outline_group_uuid) != outline_group["id"]:
                     if django_orga.outline_group_uuid is None:
                         self.stdout.write(
@@ -197,16 +195,18 @@ class Command(BaseCommand):
                 )
 
         # Every member should be accounted for. Warn user otherwise
-        print(len(django_users_unaccounted_for), "souci(s) de permissions après import.")
+        print(
+            len(django_users_unaccounted_for), "souci(s) de permissions après import."
+        )
         if len(django_users_unaccounted_for) != 0:
             print("Veuillez vérifier/synchroniser les groupes des membres suivants :")
             for extra_django_member in django_users_unaccounted_for:
                 print("   - ", extra_django_member)
 
         self.stdout.write(
-            f"\n{count_existing_orgas} organisations existantes déjà sur secretariat."
+            f"\n{count_existing_orgas} organisations déjà à jour sur secretariat."
         )
-        self.stdout.write(f"{count_new_groups} organisations crées.")
+        self.stdout.write(f"{count_new_groups} organisations créées.")
         self.stdout.write(self.style.ERROR(f"{count_errors} erreurs."))
 
     def create_new_django_orga(self, outline_group):

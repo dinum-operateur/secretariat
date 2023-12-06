@@ -191,7 +191,6 @@ class Client:
             offset += limit
             users = self._request_list_memberships(group_id, offset, limit)
 
-
     def remove_user_from_outline(self, user: User):
         requests.post(
             url=f"{self.api_url}/users.delete",
