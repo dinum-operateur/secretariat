@@ -1,6 +1,8 @@
 from django.contrib.auth import get_user_model
+from django.core.exceptions import ValidationError
 from django.core.management.base import BaseCommand
 from django.db.utils import IntegrityError
+from factory import Faker
 
 from config.settings import OUTLINE_URL
 from secretariat.models import Membership, Organisation
@@ -72,6 +74,10 @@ class Command(BaseCommand):
                     count_new_users += 1
                 except IntegrityError:
                     count_errors += 1
+                except ValidationError:
+                    count_errors += 1
+                else:
+                    count_new_users += 1
 
         self.stdout.write(
             f"\n{count_existing_users} utilisateurices déjà à jour sur secretariat."
@@ -86,16 +92,17 @@ class Command(BaseCommand):
             last_name=" ".join(outline_user["name"].split(" ")[1:]),
             email=outline_user["email"],
             outline_uuid=outline_user["id"],
+            password=Faker("password"),
         )
         try:
+            django_user.full_clean()
             django_user.save()
-        except IntegrityError as error:
+        except IntegrityError:
             self.stdout.write(
                 self.style.ERROR(
                     f"Impossible d'ajouter '{django_user.username}' car cet username existe déjà dans Django. Veuillez choisir un username différent ou supprimer le doublon avant de réessayer."
                 )
             )
-            raise error
 
     def get_all_outline_groups(self, client):
         try:
@@ -117,17 +124,17 @@ class Command(BaseCommand):
             value[0] for value in Organisation.objects.values_list("name")
         )
         known_group_uuids = set(
-            value[0] for value in Organisation.objects.values_list("outline_group_uuid")
+            str(value[0])
+            for value in Organisation.objects.values_list("outline_group_uuid")
         )
         count_existing_orgas, count_new_groups, count_errors = 0, 0, 0
 
         for outline_group in self.get_all_outline_groups(client):
-            if outline_group["id"] in known_group_uuids:
+            if str(outline_group["id"]) in known_group_uuids:
                 count_existing_orgas += 1
                 django_orga = Organisation.objects.get(
                     outline_group_uuid=outline_group["id"]
                 )
-
                 prompt_already_existing = f'L\'organisation "{outline_group["name"]}" existe déjà sur secretariat.'
 
                 if django_orga.name != outline_group["name"]:
@@ -215,13 +222,15 @@ class Command(BaseCommand):
             outline_group_uuid=outline_group["id"],
         )
         try:
+            django_orga.full_clean()
             django_orga.save()
-        except IntegrityError as error:
+        except IntegrityError:
             self.stdout.write(
                 self.style.ERROR(
                     f"Impossible d'ajouter '{outline_group.name}' car ce groupe existe déjà dans Django. Veuillez choisir un nom de groupe différent ou supprimer le doublon avant de réessayer."
                 )
             )
-            raise error
+        else:
+            self.stdout.write(f"Création du groupe {django_orga.name}.")
 
-        self.stdout.write(f"Création du groupe {django_orga.name}.")
+        return django_orga
