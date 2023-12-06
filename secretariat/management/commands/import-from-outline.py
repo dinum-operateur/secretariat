@@ -132,13 +132,14 @@ class Command(BaseCommand):
 
                 if django_orga.name != outline_group["name"]:
                     django_orga.name = outline_group["name"]
+                    django_orga.save()
 
             elif outline_group["name"] in known_group_names:
                 count_existing_orgas += 1
                 django_orga = Organisation.objects.get(name=outline_group["name"])
 
                 prompt_already_existing = (
-                    f'Group "{outline_group["name"]}" already on secretariat app'
+                    f'L’orga "{outline_group["name"]}" existe déjà dans l’app secrétariat'
                 )
                 if str(django_orga.outline_group_uuid) != outline_group["id"]:
                     if django_orga.outline_group_uuid is None:
@@ -173,9 +174,8 @@ class Command(BaseCommand):
             )
 
             # and creates memberships for all of them
-            outline_group_members = client.list_group_users(outline_group["id"])
             count_added_members = 0
-            for member in outline_group_members:
+            for member in client.list_group_users(outline_group["id"]):
                 django_user = User.objects.get(outline_uuid=member["id"])
 
                 try:
@@ -197,11 +197,10 @@ class Command(BaseCommand):
                 )
 
         # Every member should be accounted for. Warn user otherwise
-        users_with_unexpected_auth = set(django_users_unaccounted_for)
-        print(len(users_with_unexpected_auth), "souci(s) de permissions après import.")
-        if len(users_with_unexpected_auth) != 0:
+        print(len(django_users_unaccounted_for), "souci(s) de permissions après import.")
+        if len(django_users_unaccounted_for) != 0:
             print("Veuillez vérifier/synchroniser les groupes des membres suivants :")
-            for extra_django_member in users_with_unexpected_auth:
+            for extra_django_member in django_users_unaccounted_for:
                 print("   - ", extra_django_member)
 
         self.stdout.write(
