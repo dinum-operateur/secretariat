@@ -71,7 +71,6 @@ class Command(BaseCommand):
             else:
                 try:
                     self.create_new_django_user(user)
-                    count_new_users += 1
                 except IntegrityError:
                     count_errors += 1
                 except ValidationError:
