@@ -42,3 +42,5 @@ class TestSynchronizationCommand(TestCase):
             Organisation.objects.filter(name=outline_group.name).exists(),
             "Organization should exist now.",
         )
+
+        self.outline_client.delete_group_from_outline(outline_group)
