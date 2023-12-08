@@ -1,7 +1,7 @@
 from datetime import date, timedelta
 from unittest.mock import patch
 
-from django.core.exceptions import ValidationError
+from django.db.utils import IntegrityError
 from django.test import TestCase
 
 from secretariat.models import Organisation, User
@@ -58,16 +58,18 @@ class TestMembership(TestCase):
 
     def test_membership_cannot_end_before_beginning(self):
         wrong_end_date = date.today() - timedelta(days=100)
-        membership = MembershipFactory(start_date=date.today(), end_date=wrong_end_date)
-        self.assertFalse(membership.start_date <= membership.end_date)
-        with self.assertRaises(ValidationError):
+        with self.assertRaises(IntegrityError):
+            membership = MembershipFactory(
+                start_date=date.today(), end_date=wrong_end_date
+            )
             membership.full_clean()
             membership.save()
 
     def test_membership_cannot_end_same_day_as_beginning(self):
-        membership = MembershipFactory(start_date=date.today(), end_date=date.today())
-        self.assertEqual(membership.start_date, membership.end_date)
-        with self.assertRaises(ValidationError):
+        with self.assertRaises(IntegrityError):
+            membership = MembershipFactory(
+                start_date=date.today(), end_date=date.today()
+            )
             membership.full_clean()
             membership.save()
 
