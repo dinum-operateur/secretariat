@@ -17,54 +17,31 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         print(f"Instance URL is {OUTLINE_URL} .")
-        # check instance is up ?
 
         client = OutlineClient()
 
         self.import_users(client)
         self.import_orga_and_memberships(client)
 
-    def get_all_outline_users(self, client):
-        try:
-            offset = 0
-            limit = 25
-            users_page = None
-            while users_page != []:
-                users_page = client.list_users(offset=offset, limit=limit)
-                yield from users_page
-                offset += limit
-
-        except RemoteServerError:
-            self.stdout.write(self.style.ERROR("Cannot reach remote server."))
-            exit()
-
     def import_users(self, client):
         self.stdout.write("Importing users ... ")
 
+        # we list known mails to try and match users
         known_emails = set(value[0] for value in User.objects.values_list("email"))
         count_existing_users, count_new_users, count_errors = 0, 0, 0
 
         for user in self.get_all_outline_users(client):
             if user["email"] in known_emails:
                 django_user = User.objects.get(email=user["email"])
-
-                prompt_already_existing = (
-                    f'Email {user["email"]} already on secretariat app'
-                )
                 if str(django_user.outline_uuid) == user["id"]:
                     count_existing_users += 1
                 elif django_user.outline_uuid is None:
-                    self.stdout.write(
-                        self.style.WARNING(
-                            f"{prompt_already_existing}, with no UUID. Copying UUID from outline."
-                        )
-                    )
                     django_user.outline_uuid = user["id"]
                     django_user.save()
                 else:
                     self.stdout.write(
                         self.style.ERROR(
-                            f"{prompt_already_existing}. Unexpected UUID (django: '{django_user.outline_uuid}', outline: '{user['id']}')."
+                            f"Unexpected UUID for {django_user.username} (django: '{django_user.outline_uuid}', outline: '{user['id']}')."
                         )
                     )
                     count_errors += 1
@@ -83,6 +60,20 @@ class Command(BaseCommand):
         )
         self.stdout.write(f"{count_new_users} nouveaux users.")
         self.stdout.write(self.style.ERROR(f"{count_errors} erreurs.\n"))
+
+    def get_all_outline_users(self, client):
+        try:
+            offset = 0
+            limit = 25
+            users_page = None
+            while users_page != []:
+                users_page = client.list_users(offset=offset, limit=limit)
+                yield from users_page
+                offset += limit
+
+        except RemoteServerError:
+            self.stdout.write(self.style.ERROR("Cannot reach remote server."))
+            exit()
 
     def create_new_django_user(self, outline_user):
         django_user = User(
