@@ -65,7 +65,7 @@ class Client:
         return user_uuid
 
     def add_to_outline_group(self, user_uuid, group_uuid):
-        requests.post(
+        response = requests.post(
             url=f"{self.api_url}/groups.add_user",
             headers=self.headers,
             json={
@@ -73,6 +73,8 @@ class Client:
                 "userId": str(user_uuid),
             },
         )
+        if response.json()["ok"] is False:
+            raise Exception(response.json()["message"])
 
     def remove_from_outline_group(self, user_uuid, group_uuid):
         requests.post(

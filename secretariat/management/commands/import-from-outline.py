@@ -177,7 +177,7 @@ class Command(BaseCommand):
                 value[0] for value in django_orga.members.values_list("username")
             )
 
-            # and creates memberships for all of them
+            # and get or create memberships for all users found in outline group
             count_added_members = 0
             for member in client.list_group_users(outline_group["id"]):
                 django_user = User.objects.get(outline_uuid=member["id"])
@@ -189,6 +189,7 @@ class Command(BaseCommand):
                         role="admin" if member["isAdmin"] else "member",
                     )
                     if is_created:
+                        membership.save()
                         count_added_members += 1
                     else:
                         django_users_unaccounted_for.remove(django_user.username)
