@@ -119,3 +119,12 @@ class OrganisationAdmin(admin.ModelAdmin):
     @admin.display(description="Synchro Outline", boolean=True)
     def is_outline_synchronized(self, obj):
         return obj.outline_group_uuid is not None
+
+
+@admin.register(Membership)
+class MembershipAdmin(admin.ModelAdmin):
+    list_display = (
+        "user",
+        "organisation",
+        "role",
+    )

@@ -1,7 +1,7 @@
 import requests
 
 from config.settings import OUTLINE_API_TOKEN, OUTLINE_URL
-from secretariat.models import User
+from secretariat.models import Organisation, User
 
 
 class OutlineAPIClientError(Exception):
@@ -65,7 +65,7 @@ class Client:
         return user_uuid
 
     def add_to_outline_group(self, user_uuid, group_uuid):
-        requests.post(
+        response = requests.post(
             url=f"{self.api_url}/groups.add_user",
             headers=self.headers,
             json={
@@ -73,6 +73,8 @@ class Client:
                 "userId": str(user_uuid),
             },
         )
+        if response.json()["ok"] is False:
+            raise Exception(response.json()["message"])
 
     def remove_from_outline_group(self, user_uuid, group_uuid):
         requests.post(
@@ -197,5 +199,14 @@ class Client:
             headers=self.headers,
             json={
                 "id": str(user.outline_uuid),
+            },
+        )
+
+    def delete_group_from_outline(self, group: Organisation):
+        requests.post(
+            url=f"{self.api_url}/groups.delete",
+            headers=self.headers,
+            json={
+                "id": str(group.outline_group_uuid),
             },
         )
