@@ -39,7 +39,7 @@ class User(AbstractUser):
 
 
 class Organisation(models.Model):
-    name = models.CharField(max_length=50)
+    name = models.CharField(max_length=70)
     outline_group_uuid = models.UUIDField(
         null=True, blank=True, default=None, unique=True
     )
