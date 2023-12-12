@@ -113,12 +113,16 @@ class OrganisationAdmin(admin.ModelAdmin):
     list_filter = (OrganisationSynchronizedWithOutlineFilter,)
     list_display = (
         "name",
+        "members_count",
         "is_outline_synchronized",
     )
 
     @admin.display(description="Synchro Outline", boolean=True)
     def is_outline_synchronized(self, obj):
         return obj.outline_group_uuid is not None
+
+    def members_count(self, obj):
+        return obj.members.count()
 
 
 @admin.register(Membership)
