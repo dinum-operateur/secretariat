@@ -88,6 +88,7 @@ class UserAdmin(admin.ModelAdmin):
             },
         ),
     )
+    search_fields = ["username", "email", "first_name", "last_name"]
 
     @admin.display(description="Synchro Outline", boolean=True)
     def is_outline_synchronized(self, obj):
@@ -116,6 +117,7 @@ class OrganisationAdmin(admin.ModelAdmin):
         "members_count",
         "is_outline_synchronized",
     )
+    search_fields = ["name"]
 
     @admin.display(description="Synchro Outline", boolean=True)
     def is_outline_synchronized(self, obj):
@@ -123,12 +125,3 @@ class OrganisationAdmin(admin.ModelAdmin):
 
     def members_count(self, obj):
         return obj.members.count()
-
-
-@admin.register(Membership)
-class MembershipAdmin(admin.ModelAdmin):
-    list_display = (
-        "user",
-        "organisation",
-        "role",
-    )
