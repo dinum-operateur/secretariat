@@ -1,4 +1,5 @@
-from django.shortcuts import render
+from django.contrib.auth import logout
+from django.shortcuts import redirect, render
 
 
 def view_index(request):
@@ -7,3 +8,8 @@ def view_index(request):
 
 def view_accessibilite(request):
     return render(request, "secretariat/accessibilite.html")
+
+
+def logout_view(request):
+    logout(request)
+    return redirect("index")
