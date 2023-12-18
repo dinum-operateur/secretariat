@@ -2,14 +2,14 @@ from unittest import skipUnless
 
 from django.test import TestCase
 
-from config.settings import OUTLINE_API_TOKEN, OUTLINE_OPI_GROUP_ID, OUTLINE_URL
+from config.settings import OUTLINE_API_TOKEN, OUTLINE_URL
 from secretariat.models import User
 from secretariat.tests.factories import UserFactory
 from secretariat.utils.outline import Client as OutlineClient
 
 
 @skipUnless(
-    OUTLINE_API_TOKEN and OUTLINE_URL and OUTLINE_OPI_GROUP_ID,
+    OUTLINE_API_TOKEN and OUTLINE_URL,
     "Skip test in case of missing outline configuration",
 )
 class TestUserSynchronization(TestCase):
