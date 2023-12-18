@@ -5,5 +5,5 @@ from secretariat import views
 urlpatterns = [
     path("", views.view_index, name="index"),
     path("accessibilite/", views.view_accessibilite, name="accessibilite"),
-    path("logout/", views.logout_view, name="logout"),
+    path("logout/", views.view_logout, name="logout"),
 ]

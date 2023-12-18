@@ -1,3 +1,4 @@
+from django.contrib import messages
 from django.contrib.auth import logout
 from django.shortcuts import redirect, render
 
@@ -10,6 +11,10 @@ def view_accessibilite(request):
     return render(request, "secretariat/accessibilite.html")
 
 
-def logout_view(request):
+def view_logout(request):
     logout(request)
+    messages.success(
+        request,
+        "Vous avez bien été déconnecté.e.",
+    )
     return redirect("index")
