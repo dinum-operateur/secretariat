@@ -162,3 +162,5 @@ REFERRER_POLICY = "same-origin"
 OUTLINE_URL = os.getenv("OUTLINE_URL")
 OUTLINE_API_TOKEN = os.getenv("OUTLINE_API_TOKEN")
 OUTLINE_OPI_GROUP_ID = os.getenv("OUTLINE_OPI_GROUP_ID")
+
+ADMIN_URL = os.getenv("ADMIN_URL", "admin/")

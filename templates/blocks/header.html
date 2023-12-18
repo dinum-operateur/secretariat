@@ -17,7 +17,7 @@
         <button class="fr-btn fr-btn--secondary" type="submit">Se déconnecter</button>
         </form>
     {% else %}
-        <a class="fr-btn fr-icon-lock-line" href="/admin/">
+        <a class="fr-btn fr-icon-lock-line" href="{% url 'admin:index' %}">
         Se connecter
         </a>
     {% endif %}
