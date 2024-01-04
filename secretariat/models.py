@@ -37,6 +37,17 @@ class User(AbstractUser):
             if group.outline_group_uuid:
                 client.add_to_outline_group(self.outline_uuid, group.outline_group_uuid)
 
+        # remove users from outline group which are not in django orga
+        outline_memberships = set(
+            membership["groupId"] for membership in client.list_user_memberships(self)
+        )
+        user_organisation = set(
+            organisation.outline_group_uuid for organisation in self.organisations
+        )
+
+        for outline_group_uuid in outline_memberships - user_organisation:
+            client.remove_from_outline_group(self.outline_uuid, outline_group_uuid)
+
 
 class Organisation(models.Model):
     name = models.CharField(max_length=70)

@@ -4,7 +4,11 @@ from django.test import TestCase
 
 from config.settings import OUTLINE_API_TOKEN, OUTLINE_URL
 from secretariat.models import User
-from secretariat.tests.factories import UserFactory, OrganisationFactory, MembershipFactory
+from secretariat.tests.factories import (
+    MembershipFactory,
+    OrganisationFactory,
+    UserFactory,
+)
 from secretariat.utils.outline import Client as OutlineClient
 
 
@@ -81,28 +85,46 @@ class TestUserSynchronization(TestCase):
             "User should have the same email in django and outline",
         )
 
-    def test_removing_user_from_organisation_should_removes_them_on_outline(self):
-        """
-
-        """
+    def test_removing_user_from_organisation_should_removes_them_from_outline_group(
+        self,
+    ):
         user = UserFactory()
         user.outline_uuid = self.outline_client.invite_to_outline(user)
         orga = OrganisationFactory()
         orga.outline_group_uuid = self.outline_client.create_new_group(orga.name)
         membership = MembershipFactory(user=user, organisation=orga)
-        self.outline_client.add_to_outline_group(user.outline_uuid, orga.outline_group_uuid)
+        self.outline_client.add_to_outline_group(
+            user.outline_uuid, orga.outline_group_uuid
+        )
 
         outline_memberships = self.outline_client.list_user_memberships(user)
         self.assertTrue(
-            next((True for elem in outline_memberships if orga.outline_group_uuid in elem['groupId']), False), 
-            "User should be listed in newly created group.",)
+            next(
+                (
+                    True
+                    for elem in outline_memberships
+                    if orga.outline_group_uuid in elem["groupId"]
+                ),
+                False,
+            ),
+            "User should be listed in newly created group.",
+        )
 
         membership.delete()
         user.synchronize_to_outline()
 
+        outline_memberships = self.outline_client.list_user_memberships(user)
         self.assertFalse(
-            next((True for elem in outline_memberships if orga.outline_group_uuid in elem['groupId']), False), 
-            "User should not be listed in any group.",)
+            next(
+                (
+                    True
+                    for elem in outline_memberships
+                    if orga.outline_group_uuid in elem["groupId"]
+                ),
+                False,
+            ),
+            "User should not be listed in any group.",
+        )
 
         self.outline_client.remove_user_from_outline(user)
         self.outline_client.delete_group_from_outline(orga)

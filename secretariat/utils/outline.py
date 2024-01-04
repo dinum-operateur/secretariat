@@ -212,12 +212,12 @@ class Client:
         )
 
     def list_user_memberships(self, user):
-        # in absence of api endpoint to list user memberships, 
+        # in absence of api endpoint to list user memberships,
         # we have to check user presence in all groups
 
         user_groups = []
 
-        for group in self.list_groups(): 
+        for group in self.list_groups():
             response = requests.post(
                 url=f"{self.api_url}/groups.memberships",
                 headers=self.headers,
@@ -227,11 +227,11 @@ class Client:
                     "sort": "createdAt",
                     "direction": "ASC",
                     "id": str(group["id"]),
-                    "query": str(user.first_name)
+                    "query": str(user.first_name),
                 },
             )
-            groupMemberships = response.json().get("data").get("groupMemberships")
-            if groupMemberships != []:
-                user_groups.append(groupMemberships)
+            group_memberships = response.json().get("data").get("group_memberships")
+            if group_memberships != []:
+                user_groups.append(group_memberships)
 
         return [membership for group in user_groups for membership in group]
