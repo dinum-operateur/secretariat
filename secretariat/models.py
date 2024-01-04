@@ -38,6 +38,9 @@ class User(AbstractUser):
                 client.add_to_outline_group(self.outline_uuid, group.outline_group_uuid)
 
         # remove users from outline group which are not in django orga
+        self._remove_user_from_unauthorized_groups(client)
+
+    def _remove_user_from_unauthorized_groups(self, client):
         outline_memberships = set(
             membership["groupId"] for membership in client.list_user_memberships(self)
         )

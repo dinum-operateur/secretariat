@@ -230,8 +230,11 @@ class Client:
                     "query": str(user.first_name),
                 },
             )
-            group_memberships = response.json().get("data").get("group_memberships")
+            group_memberships = response.json().get("data").get("groupMemberships")
             if group_memberships != []:
                 user_groups.append(group_memberships)
 
-        return [membership for group in user_groups for membership in group]
+        memberships_flat_list = [
+            membership for group in user_groups for membership in group
+        ]
+        return memberships_flat_list
